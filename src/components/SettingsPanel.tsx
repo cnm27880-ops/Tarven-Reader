@@ -1,0 +1,189 @@
+import { useRef, useState } from "react";
+import { Settings, Upload, X } from "lucide-react";
+import type { FontPreset } from "../hooks/useReaderSettings";
+import { FONT_PRESETS } from "../hooks/useReaderSettings";
+import { MessageContent } from "./MessageContent";
+
+interface SettingsPanelProps {
+  fontPreset: FontPreset;
+  fontSize: number;
+  customFontName: string | null;
+  onFontPresetChange: (preset: FontPreset) => void;
+  onFontSizeChange: (size: number) => void;
+  onCustomFontLoad: (file: File) => Promise<string>;
+}
+
+export function SettingsPanel({
+  fontPreset,
+  fontSize,
+  customFontName,
+  onFontPresetChange,
+  onFontSizeChange,
+  onCustomFontLoad,
+}: SettingsPanelProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [fontError, setFontError] = useState<string | null>(null);
+  const [isLoadingFont, setIsLoadingFont] = useState(false);
+  const fontInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFontFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsLoadingFont(true);
+    setFontError(null);
+    try {
+      await onCustomFontLoad(file);
+      onFontPresetChange("custom");
+    } catch (err) {
+      setFontError(err instanceof Error ? err.message : "載入字型失敗");
+    } finally {
+      setIsLoadingFont(false);
+      if (fontInputRef.current) fontInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="
+          fixed bottom-5 right-5 z-40
+          w-11 h-11 rounded-full
+          bg-surface/90 backdrop-blur-md
+          border border-border/60 shadow-lg shadow-black/10
+          flex items-center justify-center
+          text-muted-foreground hover:text-foreground hover:border-accent/40
+          hover:shadow-xl active:scale-95
+          transition-all duration-200
+          lg:right-24
+        "
+        title="閱讀設定"
+        aria-label="閱讀設定"
+      >
+        <Settings className="w-5 h-5" />
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-[105] flex items-end sm:items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div className="relative w-full max-w-sm rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-accent/70 to-accent/40" />
+
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-semibold text-foreground">閱讀設定</h2>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  aria-label="關閉"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2.5 block">
+                    字型
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {FONT_PRESETS.filter((p) => p.id !== "custom").map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => onFontPresetChange(preset.id)}
+                        className={`
+                          px-3 py-2.5 rounded-xl border text-sm transition-all duration-200
+                          ${
+                            fontPreset === preset.id
+                              ? "border-accent bg-accent/10 text-accent"
+                              : "border-border text-muted-foreground hover:border-accent/30 hover:bg-muted/30"
+                          }
+                        `}
+                        style={{ fontFamily: preset.family }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-3">
+                    <input
+                      ref={fontInputRef}
+                      type="file"
+                      accept=".ttf,.otf,.woff,.woff2"
+                      className="hidden"
+                      onChange={handleFontFile}
+                    />
+                    <button
+                      type="button"
+                      disabled={isLoadingFont}
+                      onClick={() => fontInputRef.current?.click()}
+                      className={`
+                        w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm
+                        transition-all duration-200
+                        ${
+                          fontPreset === "custom"
+                            ? "border-accent bg-accent/10 text-accent"
+                            : "border-border text-muted-foreground hover:border-accent/30 hover:bg-muted/30"
+                        }
+                        disabled:opacity-50
+                      `}
+                    >
+                      <Upload className="w-4 h-4" />
+                      {isLoadingFont
+                        ? "載入中…"
+                        : customFontName
+                          ? "更換自訂字型"
+                          : "匯入字型檔案"}
+                    </button>
+                    {customFontName && fontPreset === "custom" && (
+                      <p className="text-xs text-muted-foreground mt-1.5 text-center truncate">
+                        已載入：{customFontName.replace(/^CustomReader_\d+$/, "自訂字型")}
+                      </p>
+                    )}
+                    {fontError && (
+                      <p className="text-xs text-red-500 mt-1.5 text-center">{fontError}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <label className="text-sm font-medium text-foreground">字級</label>
+                    <span className="text-sm text-muted-foreground tabular-nums">{fontSize}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={13}
+                    max={28}
+                    step={1}
+                    value={fontSize}
+                    onChange={(e) => onFontSizeChange(Number(e.target.value))}
+                    className="w-full accent-accent h-1.5 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <span>小</span>
+                    <span>大</span>
+                  </div>
+                </div>
+
+                <p
+                  className="text-muted-foreground leading-relaxed p-3 rounded-xl bg-muted/30 border border-border/40 reader-text"
+                >
+                  <MessageContent text="預覽文字：**這是內心話的樣式**，一般敘述文字則維持原色。" />
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

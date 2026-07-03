@@ -3,13 +3,16 @@ export interface SillyTavernMessage {
   mes?: string;
   is_user?: boolean;
   send_date?: string | number;
-  [key: string]: any;
+  id?: string | number;
+  [key: string]: unknown;
 }
 
 export interface ChatMessage {
-  id: string; // we'll generate an ID for React keys and deduplication
+  id: string;
+  dedupeKey: string;
   name: string;
   mes: string;
   isUser: boolean;
   rawIndex: number;
+  sendDate?: string | number;
 }
