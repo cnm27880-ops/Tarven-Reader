@@ -9,6 +9,8 @@ export interface Bookmark {
   index: number;
   /** 建立書籤當下的內容摘要。 */
   snippet: string;
+  /** 使用者自訂備註。 */
+  note?: string;
   createdAt: number;
 }
 
@@ -76,6 +78,23 @@ export function toggleBookmark(roomId: string, index: number, snippet: string): 
     ].sort((a, b) => a.index - b.index);
   }
 
+  persist();
+}
+
+export function setBookmarkNote(roomId: string, index: number, note: string): void {
+  const map = load();
+  const list = map[roomId];
+  if (!list) return;
+
+  const target = list.find((b) => b.index === index);
+  if (!target) return;
+
+  const trimmed = note.trim();
+  if (trimmed) {
+    target.note = trimmed.slice(0, 200);
+  } else {
+    delete target.note;
+  }
   persist();
 }
 

@@ -6,9 +6,11 @@ import { BookOpen, Bookmark, UploadCloud } from "lucide-react";
 import { CHAPTER_SIZE, getInitials } from "../lib/utils";
 import {
   getReadingProgress,
+  getSearchHighlight,
   publishActiveIndex,
   registerJumpToMessage,
   saveReadingProgress,
+  subscribeSearchHighlight,
 } from "../lib/readerNav";
 import { getBookmarks, subscribeBookmarks, toggleBookmark } from "../lib/bookmarks";
 import { MessageContent } from "./MessageContent";
@@ -60,6 +62,9 @@ export function ReadingArea({
 
   const bookmarks = useSyncExternalStore(subscribeBookmarks, () => getBookmarks(roomId));
   const bookmarkedIndices = useMemo(() => new Set(bookmarks.map((b) => b.index)), [bookmarks]);
+
+  // 搜尋跳轉後，該層命中的字句短暫高亮
+  const searchHighlight = useSyncExternalStore(subscribeSearchHighlight, getSearchHighlight);
 
   // 目前閱讀位置：捲到最底視為最後一則，否則取「閱讀行」上方最後一則。
   const scrollEl = scrollRef.current;
@@ -315,7 +320,7 @@ export function ReadingArea({
                               }
                             `}
                           >
-                            <MessageContent text={msg.mes} />
+                            <MessageContent text={msg.mes} highlight={searchHighlight?.index === virtualItem.index ? searchHighlight.term : undefined} />
                           </div>
                         </div>
                       </div>
@@ -330,7 +335,7 @@ export function ReadingArea({
                           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent flex-1" />
                         </div>
                         <div className="w-full whitespace-pre-wrap break-words text-foreground leading-[1.9]">
-                          <MessageContent text={msg.mes} />
+                          <MessageContent text={msg.mes} highlight={searchHighlight?.index === virtualItem.index ? searchHighlight.term : undefined} />
                         </div>
                       </div>
                     )}
@@ -346,6 +351,10 @@ export function ReadingArea({
         messageCount={messages.length}
         activeIndex={activeIndex}
         onJump={jumpToMessage}
+        getPreview={(i) => ({
+          name: messages[i]?.name ?? "",
+          text: messages[i]?.mes.replace(/\s+/g, " ").slice(0, 60) ?? "",
+        })}
       />
     </div>
   );

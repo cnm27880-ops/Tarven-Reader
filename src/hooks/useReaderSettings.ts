@@ -1,12 +1,22 @@
 import { useState, useCallback, useEffect } from "react";
 
 export type FontPreset = "noto-sans" | "noto-serif" | "system" | "custom";
+export type AccentColor = "violet" | "teal" | "emerald" | "amber" | "rose";
 
 export interface ReaderSettings {
   fontPreset: FontPreset;
   customFontName: string | null;
   fontSize: number;
+  accentColor: AccentColor;
 }
+
+export const ACCENT_COLORS: { id: AccentColor; label: string; swatch: string }[] = [
+  { id: "violet", label: "紫羅蘭", swatch: "#7c6aef" },
+  { id: "teal", label: "青碧", swatch: "#0d9488" },
+  { id: "emerald", label: "松石綠", swatch: "#059669" },
+  { id: "amber", label: "琥珀", swatch: "#b45309" },
+  { id: "rose", label: "玫瑰", swatch: "#be185d" },
+];
 
 const STORAGE_KEY = "readerSettings";
 const CUSTOM_FONT_STORAGE_KEY = "readerCustomFont";
@@ -22,6 +32,7 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   fontPreset: "noto-serif",
   customFontName: null,
   fontSize: 17,
+  accentColor: "violet",
 };
 
 function loadSettings(): ReaderSettings {
@@ -33,6 +44,9 @@ function loadSettings(): ReaderSettings {
         fontPreset: parsed.fontPreset ?? DEFAULT_SETTINGS.fontPreset,
         customFontName: parsed.customFontName ?? null,
         fontSize: parsed.fontSize ?? DEFAULT_SETTINGS.fontSize,
+        accentColor: ACCENT_COLORS.some((c) => c.id === parsed.accentColor)
+          ? (parsed.accentColor as AccentColor)
+          : DEFAULT_SETTINGS.accentColor,
       };
     }
   } catch {
@@ -72,6 +86,12 @@ function applySettingsToDOM(settings: ReaderSettings) {
   const family = resolveFontFamily(settings);
   document.documentElement.style.setProperty("--reader-font-family", family);
   document.documentElement.style.setProperty("--reader-font-size", `${settings.fontSize}px`);
+
+  if (settings.accentColor === "violet") {
+    delete document.documentElement.dataset.accent;
+  } else {
+    document.documentElement.dataset.accent = settings.accentColor;
+  }
 }
 
 export function useReaderSettings() {
@@ -107,6 +127,13 @@ export function useReaderSettings() {
   const setFontSize = useCallback(
     (size: number) => {
       persist({ ...settings, fontSize: Math.min(28, Math.max(13, size)) });
+    },
+    [settings, persist],
+  );
+
+  const setAccentColor = useCallback(
+    (color: AccentColor) => {
+      persist({ ...settings, accentColor: color });
     },
     [settings, persist],
   );
@@ -154,6 +181,7 @@ export function useReaderSettings() {
     isReady,
     setFontPreset,
     setFontSize,
+    setAccentColor,
     loadCustomFont,
   };
 }

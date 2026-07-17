@@ -53,6 +53,72 @@
     --soft-aside: #7d7a75;
   }
 
+  /* ── 自訂主題色（data-accent 掛在 <html> 上） ── */
+
+  :root[data-accent="teal"] {
+    --accent: #0d9488;
+    --character-bubble: #e9f6f3;
+    --inner-thought: #0f766e;
+    --gradient-start: rgba(13, 148, 136, 0.06);
+    --gradient-end: rgba(13, 148, 136, 0.04);
+  }
+  .dark[data-accent="teal"] {
+    --accent: #2dd4bf;
+    --accent-foreground: #141318;
+    --character-bubble: #16302c;
+    --inner-thought: #7edcd0;
+    --gradient-start: rgba(45, 212, 191, 0.08);
+    --gradient-end: rgba(45, 212, 191, 0.05);
+  }
+
+  :root[data-accent="emerald"] {
+    --accent: #059669;
+    --character-bubble: #e9f6ee;
+    --inner-thought: #047857;
+    --gradient-start: rgba(5, 150, 105, 0.06);
+    --gradient-end: rgba(5, 150, 105, 0.04);
+  }
+  .dark[data-accent="emerald"] {
+    --accent: #34d399;
+    --accent-foreground: #141318;
+    --character-bubble: #162e23;
+    --inner-thought: #86e8bf;
+    --gradient-start: rgba(52, 211, 153, 0.08);
+    --gradient-end: rgba(52, 211, 153, 0.05);
+  }
+
+  :root[data-accent="amber"] {
+    --accent: #b45309;
+    --character-bubble: #faf3e6;
+    --inner-thought: #92400e;
+    --gradient-start: rgba(180, 83, 9, 0.06);
+    --gradient-end: rgba(180, 83, 9, 0.04);
+  }
+  .dark[data-accent="amber"] {
+    --accent: #fbbf24;
+    --accent-foreground: #141318;
+    --character-bubble: #2e2717;
+    --inner-thought: #fcd34d;
+    --gradient-start: rgba(251, 191, 36, 0.08);
+    --gradient-end: rgba(251, 191, 36, 0.05);
+  }
+
+  :root[data-accent="rose"] {
+    --accent: #be185d;
+    --character-bubble: #fbeef4;
+    --inner-thought: #9d174d;
+    --gradient-start: rgba(190, 24, 93, 0.06);
+    --gradient-end: rgba(190, 24, 93, 0.04);
+  }
+  .dark[data-accent="rose"] {
+    --accent: #fb7185;
+    --accent-foreground: #141318;
+    --character-bubble: #301b22;
+    --inner-thought: #fda4af;
+    --gradient-start: rgba(251, 113, 133, 0.08);
+    --gradient-end: rgba(251, 113, 133, 0.05);
+  }
+
   html,
   body,
   #root {
@@ -111,6 +177,23 @@
   .soft-aside {
     color: var(--soft-aside);
     letter-spacing: 0.01em;
+  }
+
+  .search-flash {
+    background-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    color: inherit;
+    border-radius: 3px;
+    padding: 0 2px;
+    animation: search-flash-fade 5s ease-out forwards;
+  }
+
+  @keyframes search-flash-fade {
+    0%, 60% {
+      background-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    100% {
+      background-color: transparent;
+    }
   }
 }
 

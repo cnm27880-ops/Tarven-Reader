@@ -23,7 +23,12 @@ import {
   jumpToMessage,
   subscribeActiveIndex,
 } from "../lib/readerNav";
-import { getBookmarks, subscribeBookmarks, toggleBookmark } from "../lib/bookmarks";
+import {
+  getBookmarks,
+  setBookmarkNote,
+  subscribeBookmarks,
+  toggleBookmark,
+} from "../lib/bookmarks";
 
 interface SidebarProps {
   rooms: ChatRoom[];
@@ -61,6 +66,8 @@ export function Sidebar({
   const [editName, setEditName] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showBookmarks, setShowBookmarks] = useState(false);
+  const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
+  const [noteText, setNoteText] = useState("");
 
   // 目錄跟隨閱讀位置自動高亮目前章節
   const activeIndex = useSyncExternalStore(subscribeActiveIndex, getActiveIndex);
@@ -318,32 +325,82 @@ export function Sidebar({
               </p>
             ) : (
               <ul className="space-y-1">
-                {bookmarks.map((bookmark) => (
-                  <li key={bookmark.index} className="group relative">
-                    <button
-                      type="button"
-                      onClick={() => handleBookmarkClick(bookmark.index)}
-                      className="w-full text-left rounded-xl px-3 py-2.5 pr-8 border border-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-all duration-200"
-                    >
-                      <span className="block text-xs font-medium text-accent tabular-nums">
-                        第 {bookmark.index + 1} 層
-                      </span>
-                      <span className="block text-xs mt-0.5 truncate">{bookmark.snippet}</span>
-                    </button>
-                    {activeRoomId && (
+                {bookmarks.map((bookmark) => {
+                  const isEditingNote = editingNoteIndex === bookmark.index;
+
+                  return (
+                    <li key={bookmark.index} className="group relative">
                       <button
                         type="button"
-                        onClick={() =>
-                          toggleBookmark(activeRoomId, bookmark.index, bookmark.snippet)
-                        }
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                        aria-label="移除書籤"
+                        onClick={() => handleBookmarkClick(bookmark.index)}
+                        className="w-full text-left rounded-xl px-3 py-2.5 pr-12 border border-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-all duration-200"
                       >
-                        <X className="w-3 h-3" />
+                        <span className="block text-xs font-medium text-accent tabular-nums">
+                          第 {bookmark.index + 1} 層
+                        </span>
+                        {bookmark.note && (
+                          <span className="block text-xs mt-0.5 text-foreground font-medium break-words">
+                            {bookmark.note}
+                          </span>
+                        )}
+                        <span className="block text-xs mt-0.5 truncate opacity-70">
+                          {bookmark.snippet}
+                        </span>
                       </button>
-                    )}
-                  </li>
-                ))}
+
+                      {isEditingNote && activeRoomId && (
+                        <div className="px-3 pb-2">
+                          <input
+                            autoFocus
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                setBookmarkNote(activeRoomId, bookmark.index, noteText);
+                                setEditingNoteIndex(null);
+                              }
+                              if (e.key === "Escape") setEditingNoteIndex(null);
+                            }}
+                            onBlur={() => {
+                              setBookmarkNote(activeRoomId, bookmark.index, noteText);
+                              setEditingNoteIndex(null);
+                            }}
+                            placeholder="輸入備註，Enter 儲存"
+                            className="w-full px-2 py-1.5 text-xs rounded-lg border border-accent bg-background text-foreground"
+                          />
+                        </div>
+                      )}
+
+                      {activeRoomId && !isEditingNote && (
+                        <div className="absolute right-1.5 top-2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingNoteIndex(bookmark.index);
+                              setNoteText(bookmark.note ?? "");
+                            }}
+                            className="p-1 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted/60"
+                            aria-label="編輯備註"
+                            title="編輯備註"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              toggleBookmark(activeRoomId, bookmark.index, bookmark.snippet)
+                            }
+                            className="p-1 rounded-md text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10"
+                            aria-label="移除書籤"
+                            title="移除書籤"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )
           ) : chapterCount === 0 ? (

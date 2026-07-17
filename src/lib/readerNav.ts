@@ -42,6 +42,38 @@ export function subscribeActiveIndex(listener: () => void): () => void {
   };
 }
 
+// ── 搜尋跳轉後的暫時高亮 ──────────────────────────────────────
+
+export interface SearchHighlight {
+  index: number;
+  term: string;
+}
+
+let highlightValue: SearchHighlight | null = null;
+const highlightListeners = new Set<() => void>();
+let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function publishSearchHighlight(highlight: SearchHighlight | null): void {
+  highlightValue = highlight;
+  for (const listener of highlightListeners) listener();
+
+  if (highlightTimer) clearTimeout(highlightTimer);
+  if (highlight) {
+    highlightTimer = setTimeout(() => publishSearchHighlight(null), 5000);
+  }
+}
+
+export function getSearchHighlight(): SearchHighlight | null {
+  return highlightValue;
+}
+
+export function subscribeSearchHighlight(listener: () => void): () => void {
+  highlightListeners.add(listener);
+  return () => {
+    highlightListeners.delete(listener);
+  };
+}
+
 // ── 閱讀進度（每個聊天室記住上次讀到的樓層） ──────────────────
 
 const PROGRESS_KEY = "readingProgress";

@@ -231,8 +231,18 @@ export function CloudSyncPanel({ isOpen, onClose }: CloudSyncPanelProps) {
                       在「憑證」建立「OAuth 用戶端 ID」（類型：網頁應用程式），
                       並把本網站網址加入「已授權的 JavaScript 來源」。
                     </li>
+                    <li>
+                      <span className="text-foreground font-medium">重要：</span>
+                      在「OAuth 同意畫面」→「目標對象／測試使用者」把
+                      <span className="text-foreground">自己的 Gmail</span> 加入測試使用者名單，
+                      否則授權時會出現「已封鎖存取權：403 access_denied」。
+                    </li>
                     <li>把產生的 Client ID 貼到下方欄位即可。</li>
                   </ol>
+                  <p>
+                    看到「未完成 Google 驗證程序 / 403 access_denied」＝你的帳號還沒在
+                    測試使用者名單裡，回到同意畫面設定加入即可，不需要真的送 Google 驗證。
+                  </p>
                   <p>
                     備份只會存在你自己 Google Drive 的應用程式專屬空間，
                     網站與其他人都看不到你雲端裡的其他檔案。

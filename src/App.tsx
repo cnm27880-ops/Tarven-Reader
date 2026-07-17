@@ -14,6 +14,7 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { CloudSyncPanel } from "./components/CloudSyncPanel";
 import { ExportNameModal } from "./components/ExportNameModal";
 import { SearchPanel } from "./components/SearchPanel";
+import { StatsPanel } from "./components/StatsPanel";
 import { useDriveAutoSync } from "./hooks/useDriveAutoSync";
 import "./index.css";
 
@@ -23,6 +24,7 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCloudSyncOpen, setIsCloudSyncOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingExport, setPendingExport] = useState<PendingExport | null>(null);
@@ -52,6 +54,7 @@ function App() {
     settings: readerSettings,
     setFontPreset,
     setFontSize,
+    setAccentColor,
     loadCustomFont,
   } = useReaderSettings();
 
@@ -290,9 +293,18 @@ function App() {
           onExportTavern={handleExportTavern}
           onCloudSync={openCloudSync}
           onSearch={() => setIsSearchOpen(true)}
+          onStats={() => setIsStatsOpen(true)}
           hasMessages={messages.length > 0}
         />
       </Layout>
+
+      <StatsPanel
+        messages={messages}
+        roomId={activeRoomId}
+        roomName={activeRoom?.name}
+        isOpen={isStatsOpen}
+        onClose={() => setIsStatsOpen(false)}
+      />
 
       <SearchPanel
         messages={messages}
@@ -356,8 +368,10 @@ function App() {
         fontPreset={readerSettings.fontPreset}
         fontSize={readerSettings.fontSize}
         customFontName={readerSettings.customFontName}
+        accentColor={readerSettings.accentColor}
         onFontPresetChange={setFontPreset}
         onFontSizeChange={setFontSize}
+        onAccentColorChange={setAccentColor}
         onCustomFontLoad={loadCustomFont}
       />
     </div>
