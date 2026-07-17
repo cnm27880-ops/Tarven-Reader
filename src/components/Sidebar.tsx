@@ -4,6 +4,9 @@ import type { ChatRoom } from "../lib/chatStorage";
 import {
   BookOpen,
   ChevronRight,
+  Cloud,
+  Download,
+  FileJson,
   List,
   MessageSquare,
   Pencil,
@@ -22,6 +25,9 @@ interface SidebarProps {
   onRenameRoom: (roomId: string, name: string) => void;
   onDeleteRoom: (roomId: string) => void;
   onImportClick: () => void;
+  onExportTxt: () => void;
+  onExportTavern: () => void;
+  onCloudSync: () => void;
 }
 
 export function Sidebar({
@@ -34,6 +40,9 @@ export function Sidebar({
   onRenameRoom,
   onDeleteRoom,
   onImportClick,
+  onExportTxt,
+  onExportTavern,
+  onCloudSync,
 }: SidebarProps) {
   const chapterCount = Math.ceil(messages.length / CHAPTER_SIZE);
   const [activeChapter, setActiveChapter] = useState<number | null>(null);
@@ -282,6 +291,43 @@ export function Sidebar({
               })}
             </ul>
           )}
+        </div>
+
+        {/* 小螢幕沒有右側工具列，改在側邊欄提供匯出與雲端功能 */}
+        <div className="lg:hidden px-4 pb-2 shrink-0">
+          <div className="flex gap-1.5">
+            {messages.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={onExportTxt}
+                  className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                  title="匯出為 TXT"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="text-[10px]">TXT</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onExportTavern}
+                  className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                  title="匯出酒館純淨檔"
+                >
+                  <FileJson className="w-4 h-4" />
+                  <span className="text-[10px]">純淨檔</span>
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={onCloudSync}
+              className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              title="雲端同步與備份"
+            >
+              <Cloud className="w-4 h-4" />
+              <span className="text-[10px]">雲端</span>
+            </button>
+          </div>
         </div>
 
         <button

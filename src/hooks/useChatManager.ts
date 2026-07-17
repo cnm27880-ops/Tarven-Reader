@@ -350,10 +350,17 @@ export function useChatManager() {
 
               const existing = roomsRef.current.find((r) => r.id === roomId);
               if (existing) {
+                // 已有原始檔時只追加訊息行，維持單一標頭的有效 jsonl。
+                const appendedRaw = existing.rawContent
+                  ? existing.rawContent.trimEnd() +
+                    "\n" +
+                    rawMessages.map((m) => JSON.stringify(m)).join("\n")
+                  : content;
                 const updated: ChatRoom = {
                   ...existing,
                   messages: merged,
                   locale,
+                  rawContent: appendedRaw,
                   updatedAt: Date.now(),
                 };
                 await saveRoom(updated);
@@ -370,6 +377,7 @@ export function useChatManager() {
                 messages: processed,
                 locale,
                 sourceFileName: file.name,
+                rawContent: content,
                 createdAt: now,
                 updatedAt: now,
               };

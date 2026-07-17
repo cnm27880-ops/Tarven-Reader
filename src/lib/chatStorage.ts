@@ -7,6 +7,8 @@ export interface ChatRoom {
   messages: ChatMessage[];
   locale: TextLocale;
   sourceFileName?: string;
+  /** 匯入時保存的原始檔內容，供「純淨檔匯出」還原酒館格式使用。 */
+  rawContent?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -131,6 +133,47 @@ export async function setActiveRoomId(id: string | null): Promise<void> {
   const meta = await getMeta();
   meta.activeRoomId = id;
   await setMeta(meta);
+}
+
+export interface BackupPayload {
+  version: 1;
+  app: "tarven-reader";
+  exportedAt: number;
+  meta: StorageMeta;
+  rooms: ChatRoom[];
+}
+
+export async function exportAllData(): Promise<BackupPayload> {
+  const { rooms, meta } = await loadAllRooms();
+  return {
+    version: 1,
+    app: "tarven-reader",
+    exportedAt: Date.now(),
+    meta,
+    rooms,
+  };
+}
+
+export function isBackupPayload(value: unknown): value is BackupPayload {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return record.app === "tarven-reader" && Array.isArray(record.rooms);
+}
+
+/** 以聊天室 id 為單位合併還原：備份中的聊天室覆蓋同 id，本機獨有的保留。 */
+export async function importAllData(payload: BackupPayload): Promise<void> {
+  for (const room of payload.rooms) {
+    if (!room || typeof room.id !== "string" || !Array.isArray(room.messages)) continue;
+    await runTransaction("readwrite", (store) => store.put(room));
+  }
+
+  const meta = await getMeta();
+  const backupOrder = payload.meta?.roomOrder ?? payload.rooms.map((r) => r.id);
+  const merged = [...backupOrder, ...meta.roomOrder.filter((id) => !backupOrder.includes(id))];
+  await setMeta({
+    activeRoomId: payload.meta?.activeRoomId ?? meta.activeRoomId ?? merged[0] ?? null,
+    roomOrder: merged,
+  });
 }
 
 export function createRoomId(): string {

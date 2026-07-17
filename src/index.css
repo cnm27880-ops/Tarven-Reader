@@ -31,6 +31,7 @@
     --gradient-start: rgba(124, 106, 239, 0.06);
     --gradient-end: rgba(124, 106, 239, 0.04);
     --inner-thought: #6b4fa8;
+    --soft-aside: #9a9690;
     --reader-font-family: "Noto Serif TC", "Noto Serif", serif;
     --reader-font-size: 17px;
   }
@@ -49,6 +50,7 @@
     --gradient-start: rgba(157, 141, 247, 0.08);
     --gradient-end: rgba(157, 141, 247, 0.05);
     --inner-thought: #c4b5fd;
+    --soft-aside: #7d7a75;
   }
 
   html,
@@ -104,6 +106,11 @@
     font-weight: 500;
     font-style: italic;
     letter-spacing: 0.02em;
+  }
+
+  .soft-aside {
+    color: var(--soft-aside);
+    letter-spacing: 0.01em;
   }
 }
 

@@ -9,12 +9,14 @@ import { useChatManager } from "./hooks/useChatManager";
 import type { ImportMode } from "./hooks/useChatManager";
 import { useReaderSettings } from "./hooks/useReaderSettings";
 import type { TextLocale } from "./lib/chinese";
-import { exportToTxt } from "./lib/utils";
+import { exportCleanedTavernFile, exportToTxt } from "./lib/utils";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { CloudSyncPanel } from "./components/CloudSyncPanel";
 import "./index.css";
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCloudSyncOpen, setIsCloudSyncOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +103,16 @@ function App() {
 
   const handleExport = () => {
     exportToTxt(messages);
+  };
+
+  const handleExportTavern = () => {
+    if (!activeRoom) return;
+    exportCleanedTavernFile(activeRoom);
+  };
+
+  const openCloudSync = () => {
+    setIsCloudSyncOpen(true);
+    setIsSidebarOpen(false);
   };
 
   const handleSwitchRoom = (roomId: string) => {
@@ -213,6 +225,9 @@ function App() {
           onRenameRoom={(id, name) => void renameRoom(id, name)}
           onDeleteRoom={(id) => void removeRoom(id)}
           onImportClick={triggerFileInput}
+          onExportTxt={handleExport}
+          onExportTavern={handleExportTavern}
+          onCloudSync={openCloudSync}
         />
 
         <ReadingArea
@@ -228,9 +243,13 @@ function App() {
           viewMode={viewMode}
           toggleViewMode={toggleViewMode}
           onExport={handleExport}
+          onExportTavern={handleExportTavern}
+          onCloudSync={openCloudSync}
           hasMessages={messages.length > 0}
         />
       </Layout>
+
+      <CloudSyncPanel isOpen={isCloudSyncOpen} onClose={() => setIsCloudSyncOpen(false)} />
 
       <SettingsPanel
         fontPreset={readerSettings.fontPreset}

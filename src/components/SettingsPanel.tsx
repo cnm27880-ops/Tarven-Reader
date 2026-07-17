@@ -177,7 +177,7 @@ export function SettingsPanel({
                 <p
                   className="text-muted-foreground leading-relaxed p-3 rounded-xl bg-muted/30 border border-border/40 reader-text"
                 >
-                  <MessageContent text="預覽文字：**這是內心話的樣式**，一般敘述文字則維持原色。" />
+                  <MessageContent text="預覽文字：**這是內心話的樣式**，*這是星號動作描述的樣式*，一般敘述文字則維持原色。" />
                 </p>
               </div>
             </div>
