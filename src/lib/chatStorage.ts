@@ -1,5 +1,9 @@
 import type { ChatMessage } from "../types/chat";
 import type { TextLocale } from "./chinese";
+import type { BookmarkMap } from "./bookmarks";
+import { exportBookmarks, importBookmarks } from "./bookmarks";
+import type { ProgressMap } from "./readerNav";
+import { exportReadingProgress, importReadingProgress } from "./readerNav";
 
 export interface ChatRoom {
   id: string;
@@ -141,6 +145,10 @@ export interface BackupPayload {
   exportedAt: number;
   meta: StorageMeta;
   rooms: ChatRoom[];
+  /** 各聊天室的閱讀進度（v2 起加入，舊備份沒有）。 */
+  progress?: ProgressMap;
+  /** 各聊天室的書籤（v2 起加入，舊備份沒有）。 */
+  bookmarks?: BookmarkMap;
 }
 
 export async function exportAllData(): Promise<BackupPayload> {
@@ -151,6 +159,8 @@ export async function exportAllData(): Promise<BackupPayload> {
     exportedAt: Date.now(),
     meta,
     rooms,
+    progress: exportReadingProgress(),
+    bookmarks: exportBookmarks(),
   };
 }
 
@@ -174,6 +184,9 @@ export async function importAllData(payload: BackupPayload): Promise<void> {
     activeRoomId: payload.meta?.activeRoomId ?? meta.activeRoomId ?? merged[0] ?? null,
     roomOrder: merged,
   });
+
+  importReadingProgress(payload.progress);
+  importBookmarks(payload.bookmarks);
 }
 
 export function createRoomId(): string {

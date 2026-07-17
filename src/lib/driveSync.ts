@@ -56,6 +56,20 @@ export function saveClientId(clientId: string): void {
   }
 }
 
+const AUTO_SYNC_KEY = "driveAutoSync";
+
+export function getAutoSyncEnabled(): boolean {
+  return localStorage.getItem(AUTO_SYNC_KEY) === "on";
+}
+
+export function setAutoSyncEnabled(enabled: boolean): void {
+  if (enabled) {
+    localStorage.setItem(AUTO_SYNC_KEY, "on");
+  } else {
+    localStorage.removeItem(AUTO_SYNC_KEY);
+  }
+}
+
 let gisLoading: Promise<void> | null = null;
 
 function loadGis(): Promise<void> {
@@ -191,4 +205,12 @@ export async function downloadBackup(
     `https://www.googleapis.com/drive/v3/files/${existing.id}?alt=media`,
   );
   return { content: await response.text(), modifiedTime: existing.modifiedTime };
+}
+
+/** 只查詢雲端備份的更新時間（自動同步用）。 */
+export async function getCloudBackupTime(token: string): Promise<number | null> {
+  const existing = await findBackupFile(token);
+  if (!existing?.modifiedTime) return null;
+  const ts = Date.parse(existing.modifiedTime);
+  return Number.isNaN(ts) ? null : ts;
 }

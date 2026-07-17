@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { ChatMessage } from "../types/chat";
 import type { ViewMode } from "../hooks/useChatManager";
-import { BookOpen, UploadCloud } from "lucide-react";
-import { getInitials } from "../lib/utils";
+import { BookOpen, Bookmark, UploadCloud } from "lucide-react";
+import { CHAPTER_SIZE, getInitials } from "../lib/utils";
 import {
   getReadingProgress,
+  publishActiveIndex,
   registerJumpToMessage,
   saveReadingProgress,
 } from "../lib/readerNav";
+import { getBookmarks, subscribeBookmarks, toggleBookmark } from "../lib/bookmarks";
 import { MessageContent } from "./MessageContent";
 import { MessageNavigator } from "./MessageNavigator";
 
@@ -56,6 +58,9 @@ export function ReadingArea({
     return () => registerJumpToMessage(null);
   }, [jumpToMessage]);
 
+  const bookmarks = useSyncExternalStore(subscribeBookmarks, () => getBookmarks(roomId));
+  const bookmarkedIndices = useMemo(() => new Set(bookmarks.map((b) => b.index)), [bookmarks]);
+
   // 目前閱讀位置：捲到最底視為最後一則，否則取「閱讀行」上方最後一則。
   const scrollEl = scrollRef.current;
   const scrollOffset = virtualizer.scrollOffset ?? 0;
@@ -74,6 +79,71 @@ export function ReadingArea({
       }
     }
   }
+
+  // 發布目前位置給側邊欄目錄等元件。
+  useEffect(() => {
+    publishActiveIndex(activeIndex);
+  }, [activeIndex]);
+
+  // 鍵盤快捷鍵：空白鍵翻頁、←→ 切章、Home/End 跳頭尾。
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (messages.length === 0) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+      if (document.querySelector("[data-app-modal]")) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const el = scrollRef.current;
+      const chapterCount = Math.ceil(messages.length / CHAPTER_SIZE);
+      const currentChapter = Math.min(
+        Math.floor(activeIndexRef.current / CHAPTER_SIZE),
+        chapterCount - 1,
+      );
+
+      switch (e.key) {
+        case " ":
+        case "PageDown":
+          e.preventDefault();
+          el?.scrollBy({
+            top: (e.shiftKey ? -0.85 : 0.85) * el.clientHeight,
+            behavior: "smooth",
+          });
+          break;
+        case "PageUp":
+          e.preventDefault();
+          el?.scrollBy({ top: -0.85 * el.clientHeight, behavior: "smooth" });
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          jumpToMessage(Math.max(0, currentChapter - 1) * CHAPTER_SIZE);
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          jumpToMessage(Math.min(chapterCount - 1, currentChapter + 1) * CHAPTER_SIZE);
+          break;
+        case "Home":
+          e.preventDefault();
+          jumpToMessage(0);
+          break;
+        case "End":
+          e.preventDefault();
+          jumpToMessage(messages.length - 1);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [messages.length, jumpToMessage]);
 
   // 還原上次閱讀進度（每個聊天室一次）。
   useEffect(() => {
@@ -158,6 +228,28 @@ export function ReadingArea({
             {virtualizer.getVirtualItems().map((virtualItem) => {
               const msg = messages[virtualItem.index];
               const isLast = virtualItem.index === messages.length - 1;
+              const isMarked = bookmarkedIndices.has(virtualItem.index);
+              const handleToggleBookmark = () => {
+                if (roomId) toggleBookmark(roomId, virtualItem.index, msg.mes);
+              };
+              const bookmarkBtn = (
+                <button
+                  type="button"
+                  onClick={handleToggleBookmark}
+                  className={`
+                    p-1 rounded-md transition-all duration-200 shrink-0
+                    ${
+                      isMarked
+                        ? "text-accent opacity-100"
+                        : "text-muted-foreground/50 opacity-40 hover:opacity-100 hover:text-accent"
+                    }
+                  `}
+                  title={isMarked ? "移除書籤" : `為第 ${virtualItem.index + 1} 層加入書籤`}
+                  aria-label={isMarked ? "移除書籤" : `為第 ${virtualItem.index + 1} 層加入書籤`}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${isMarked ? "fill-current" : ""}`} />
+                </button>
+              );
 
               return (
                 <div
@@ -195,13 +287,20 @@ export function ReadingArea({
                         <div
                           className={`flex flex-col min-w-0 flex-1 ${msg.isUser ? "items-end" : "items-start"}`}
                         >
-                          <span
-                            className={`text-xs font-medium mb-1.5 px-1 ${
-                              msg.isUser ? "text-muted-foreground" : "text-accent"
+                          <div
+                            className={`flex items-center gap-1 mb-1.5 px-1 ${
+                              msg.isUser ? "flex-row-reverse" : "flex-row"
                             }`}
                           >
-                            {msg.name}
-                          </span>
+                            <span
+                              className={`text-xs font-medium ${
+                                msg.isUser ? "text-muted-foreground" : "text-accent"
+                              }`}
+                            >
+                              {msg.name}
+                            </span>
+                            {bookmarkBtn}
+                          </div>
                           <div
                             className={`
                               px-5 py-3.5 sm:px-6 sm:py-4 rounded-2xl
@@ -224,8 +323,9 @@ export function ReadingArea({
                       <div className="group w-full">
                         <div className="flex items-center gap-4 mb-4">
                           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent flex-1" />
-                          <span className="font-medium text-foreground/90 tracking-[0.2em] text-sm shrink-0 px-2">
+                          <span className="font-medium text-foreground/90 tracking-[0.2em] text-sm shrink-0 px-2 flex items-center gap-1">
                             {msg.name}
+                            {bookmarkBtn}
                           </span>
                           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent flex-1" />
                         </div>

@@ -1,4 +1,4 @@
-import { Sun, Moon, MessageSquare, BookOpen, Download, FileJson, Cloud } from "lucide-react";
+import { Sun, Moon, MessageSquare, BookOpen, Download, FileJson, Cloud, Search } from "lucide-react";
 import type { Theme, ViewMode } from "../hooks/useChatManager";
 
 interface ToolbarProps {
@@ -9,6 +9,7 @@ interface ToolbarProps {
   onExport: () => void;
   onExportTavern: () => void;
   onCloudSync: () => void;
+  onSearch: () => void;
   hasMessages: boolean;
 }
 
@@ -20,6 +21,7 @@ export function Toolbar({
   onExport,
   onExportTavern,
   onCloudSync,
+  onSearch,
   hasMessages,
 }: ToolbarProps) {
   const iconClass =
@@ -61,6 +63,17 @@ export function Toolbar({
             <MessageSquare className={iconClass} />
           )}
         </button>
+
+        {hasMessages && (
+          <button
+            onClick={onSearch}
+            className={btnClass}
+            title="搜尋正文（Ctrl+F）"
+            aria-label="搜尋正文"
+          >
+            <Search className={iconClass} />
+          </button>
+        )}
 
         {hasMessages && (
           <button

@@ -20,12 +20,34 @@ export function jumpToChapter(chapterIndex: number): void {
   jumpToMessage(chapterIndex * CHAPTER_SIZE);
 }
 
+// ── 目前閱讀位置（供側邊欄目錄高亮等元件訂閱） ──────────────────
+
+let activeIndexValue = 0;
+const activeIndexListeners = new Set<() => void>();
+
+export function publishActiveIndex(index: number): void {
+  if (index === activeIndexValue) return;
+  activeIndexValue = index;
+  for (const listener of activeIndexListeners) listener();
+}
+
+export function getActiveIndex(): number {
+  return activeIndexValue;
+}
+
+export function subscribeActiveIndex(listener: () => void): () => void {
+  activeIndexListeners.add(listener);
+  return () => {
+    activeIndexListeners.delete(listener);
+  };
+}
+
 // ── 閱讀進度（每個聊天室記住上次讀到的樓層） ──────────────────
 
 const PROGRESS_KEY = "readingProgress";
 const MAX_PROGRESS_ENTRIES = 200;
 
-type ProgressMap = Record<string, number>;
+export type ProgressMap = Record<string, number>;
 
 function loadProgressMap(): ProgressMap {
   try {
@@ -69,5 +91,24 @@ export function clearReadingProgress(roomId: string): void {
     } catch {
       /* ignore */
     }
+  }
+}
+
+/** 供備份匯出使用。 */
+export function exportReadingProgress(): ProgressMap {
+  return loadProgressMap();
+}
+
+/** 供備份還原使用：合併（備份覆蓋同 id）。 */
+export function importReadingProgress(imported: ProgressMap | undefined): void {
+  if (!imported || typeof imported !== "object") return;
+  const map = loadProgressMap();
+  for (const [roomId, index] of Object.entries(imported)) {
+    if (typeof index === "number") map[roomId] = index;
+  }
+  try {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore */
   }
 }

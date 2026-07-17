@@ -16,9 +16,11 @@ import {
 } from "../lib/chatStorage";
 import {
   downloadBackup,
+  getAutoSyncEnabled,
   getSavedClientId,
   requestAccessToken,
   saveClientId,
+  setAutoSyncEnabled,
   uploadBackup,
 } from "../lib/driveSync";
 
@@ -34,6 +36,7 @@ export function CloudSyncPanel({ isOpen, onClose }: CloudSyncPanelProps) {
   const [status, setStatus] = useState<Status>(null);
   const [busy, setBusy] = useState<"upload" | "download" | "file" | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [autoSync, setAutoSync] = useState(getAutoSyncEnabled);
   const backupInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -175,7 +178,7 @@ export function CloudSyncPanel({ isOpen, onClose }: CloudSyncPanelProps) {
   `;
 
   return (
-    <div className="fixed inset-0 z-[105] flex items-end sm:items-center justify-center p-4">
+    <div className="fixed inset-0 z-[105] flex items-end sm:items-center justify-center p-4" data-app-modal>
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
@@ -278,6 +281,30 @@ export function CloudSyncPanel({ isOpen, onClose }: CloudSyncPanelProps) {
                   從雲端還原
                 </button>
               </div>
+
+              <label className="flex items-start gap-2.5 mt-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoSync}
+                  onChange={(e) => {
+                    setAutoSync(e.target.checked);
+                    setAutoSyncEnabled(e.target.checked);
+                    setStatus({
+                      kind: "info",
+                      text: e.target.checked
+                        ? "已開啟自動同步，下次進入網站時生效。"
+                        : "已關閉自動同步。",
+                    });
+                  }}
+                  className="mt-0.5 accent-accent"
+                />
+                <span className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="text-foreground font-medium">自動同步（實驗性）</span>
+                  ：每次開啟網站時自動比對雲端備份——雲端較新會詢問是否還原，
+                  本機較新則自動上傳，之後每 10 分鐘背景備份一次。
+                  開啟網站時瀏覽器可能會短暫顯示 Google 授權視窗。
+                </span>
+              </label>
             </div>
 
             <div className="flex items-center gap-3">
