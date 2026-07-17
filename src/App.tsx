@@ -25,6 +25,7 @@ function App() {
   const [isCloudSyncOpen, setIsCloudSyncOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingExport, setPendingExport] = useState<PendingExport | null>(null);
@@ -229,7 +230,7 @@ function App() {
       {error && (
         <div
           className="
-            fixed bottom-4 left-1/2 -translate-x-1/2 z-[100]
+            fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-4 left-1/2 -translate-x-1/2 z-[100]
             flex items-start gap-3
             max-w-md w-[calc(100%-2rem)]
             px-4 py-3 rounded-xl
@@ -294,6 +295,7 @@ function App() {
           onCloudSync={openCloudSync}
           onSearch={() => setIsSearchOpen(true)}
           onStats={() => setIsStatsOpen(true)}
+          onSettings={() => setIsSettingsOpen(true)}
           hasMessages={messages.length > 0}
         />
       </Layout>
@@ -315,7 +317,7 @@ function App() {
       {autoSync.restorePromptTime !== null && (
         <div
           className="
-            fixed bottom-4 left-1/2 -translate-x-1/2 z-[100]
+            fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-4 left-1/2 -translate-x-1/2 z-[100]
             flex items-start gap-3
             max-w-md w-[calc(100%-2rem)]
             px-4 py-3 rounded-xl
@@ -365,6 +367,8 @@ function App() {
       )}
 
       <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
         fontPreset={readerSettings.fontPreset}
         fontSize={readerSettings.fontSize}
         customFontName={readerSettings.customFontName}

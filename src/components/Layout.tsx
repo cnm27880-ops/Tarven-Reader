@@ -24,11 +24,11 @@ export function Layout({ children, onMenuClick, messageCount, roomName }: Layout
         >
           <Menu className="w-5 h-5" />
         </button>
-        <h1 className="ml-3 font-serif font-medium text-foreground tracking-wide text-sm">
-          酒館閱讀器
+        <h1 className="ml-3 font-serif font-medium text-foreground tracking-wide text-sm truncate min-w-0">
+          {roomName ?? "酒館閱讀器"}
         </h1>
         {messageCount > 0 && (
-          <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+          <span className="ml-auto pl-2 shrink-0 text-xs text-muted-foreground tabular-nums">
             {messageCount} 則
           </span>
         )}
@@ -47,7 +47,9 @@ export function Layout({ children, onMenuClick, messageCount, roomName }: Layout
         )}
       </div>
 
-      <div className="flex w-full h-full pt-14 md:pt-0">{children}</div>
+      <div className="flex w-full h-full pt-14 md:pt-0 pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        {children}
+      </div>
     </div>
   );
 }

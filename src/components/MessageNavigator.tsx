@@ -44,7 +44,7 @@ export function MessageNavigator({
 
   return (
     <div
-      className="hidden sm:flex flex-col items-center w-8 shrink-0 py-2 select-none h-full"
+      className="flex flex-col items-center w-7 sm:w-8 shrink-0 py-2 select-none h-full"
       aria-label="訊息導覽"
     >
       <button

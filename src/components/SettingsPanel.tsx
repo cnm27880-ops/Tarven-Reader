@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
-import { Check, Settings, Upload, X } from "lucide-react";
+import { Check, Upload, X } from "lucide-react";
 import type { AccentColor, FontPreset } from "../hooks/useReaderSettings";
 import { ACCENT_COLORS, FONT_PRESETS } from "../hooks/useReaderSettings";
 import { MessageContent } from "./MessageContent";
 
 interface SettingsPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
   fontPreset: FontPreset;
   fontSize: number;
   customFontName: string | null;
@@ -16,6 +18,8 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({
+  isOpen,
+  onClose,
   fontPreset,
   fontSize,
   customFontName,
@@ -25,7 +29,6 @@ export function SettingsPanel({
   onAccentColorChange,
   onCustomFontLoad,
 }: SettingsPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [fontError, setFontError] = useState<string | null>(null);
   const [isLoadingFont, setIsLoadingFont] = useState(false);
   const fontInputRef = useRef<HTMLInputElement>(null);
@@ -47,43 +50,23 @@ export function SettingsPanel({
     }
   };
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="
-          fixed bottom-5 right-5 z-40
-          w-11 h-11 rounded-full
-          bg-surface/90 backdrop-blur-md
-          border border-border/60 shadow-lg shadow-black/10
-          flex items-center justify-center
-          text-muted-foreground hover:text-foreground hover:border-accent/40
-          hover:shadow-xl active:scale-95
-          transition-all duration-200
-          lg:right-24
-        "
-        title="閱讀設定"
-        aria-label="閱讀設定"
-      >
-        <Settings className="w-5 h-5" />
-      </button>
+  if (!isOpen) return null;
 
-      {isOpen && (
-        <div className="fixed inset-0 z-[105] flex items-end sm:items-center justify-center p-4" data-app-modal>
+  return (
+    <div className="fixed inset-0 z-[105] flex items-end sm:items-center justify-center p-4" data-app-modal>
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-            onClick={() => setIsOpen(false)}
+            onClick={onClose}
           />
 
-          <div className="relative w-full max-w-sm rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden">
+          <div className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in">
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-accent/70 to-accent/40" />
 
             <div className="p-5">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-semibold text-foreground">閱讀設定</h2>
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={onClose}
                   className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                   aria-label="關閉"
                 >
@@ -220,8 +203,6 @@ export function SettingsPanel({
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }
