@@ -1,4 +1,5 @@
-import { Sun, Moon, MessageSquare, BookOpen, Download, FileJson, Cloud, Search, BarChart3 } from "lucide-react";
+import { Sun, Moon, MessageSquare, BookOpen, Download, FileJson, Cloud, Search, BarChart3, Settings } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { Theme, ViewMode } from "../hooks/useChatManager";
 
 interface ToolbarProps {
@@ -11,7 +12,15 @@ interface ToolbarProps {
   onCloudSync: () => void;
   onSearch: () => void;
   onStats: () => void;
+  onSettings: () => void;
   hasMessages: boolean;
+}
+
+interface ToolButton {
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
 }
 
 export function Toolbar({
@@ -24,8 +33,33 @@ export function Toolbar({
   onCloudSync,
   onSearch,
   onStats,
+  onSettings,
   hasMessages,
 }: ToolbarProps) {
+  const buttons: ToolButton[] = [
+    {
+      key: "theme",
+      icon: theme === "light" ? Moon : Sun,
+      label: theme === "light" ? "切換深色模式" : "切換淺色模式",
+      onClick: toggleTheme,
+    },
+    {
+      key: "view",
+      icon: viewMode === "bubble" ? BookOpen : MessageSquare,
+      label: viewMode === "bubble" ? "切換經典閱讀模式" : "切換氣泡對話模式",
+      onClick: toggleViewMode,
+    },
+    ...(hasMessages
+      ? [
+          { key: "search", icon: Search, label: "搜尋正文（Ctrl+F）", onClick: onSearch },
+          { key: "export", icon: Download, label: "匯出為 TXT", onClick: onExport },
+          { key: "tavern", icon: FileJson, label: "匯出酒館純淨檔（JSON）", onClick: onExportTavern },
+          { key: "stats", icon: BarChart3, label: "閱讀統計", onClick: onStats },
+        ]
+      : []),
+    { key: "cloud", icon: Cloud, label: "雲端同步與備份", onClick: onCloudSync },
+  ];
+
   const iconClass =
     "w-[18px] h-[18px] text-muted-foreground group-hover:text-foreground transition-colors duration-200";
   const btnClass = `
@@ -36,96 +70,63 @@ export function Toolbar({
     focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40
     active:scale-95
   `;
+  const mobileBtnClass = `
+    group relative p-2.5 rounded-xl
+    text-muted-foreground
+    transition-all duration-200 ease-out
+    focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40
+    active:scale-95 active:bg-muted/60
+  `;
 
   return (
-    <aside className="w-16 xl:w-[4.5rem] hidden lg:flex flex-col items-center py-6 border-l border-border/60 bg-surface/50 backdrop-blur-sm z-10 shrink-0">
-      <div className="flex flex-col gap-3">
-        <button
-          onClick={toggleTheme}
-          className={btnClass}
-          title={theme === "light" ? "切換深色模式" : "切換淺色模式"}
-          aria-label={theme === "light" ? "切換深色模式" : "切換淺色模式"}
-        >
-          {theme === "light" ? (
-            <Moon className={iconClass} />
-          ) : (
-            <Sun className={iconClass} />
-          )}
-        </button>
+    <>
+      {/* 桌面版：右側直立功能條 */}
+      <aside className="w-16 xl:w-[4.5rem] hidden lg:flex flex-col items-center py-6 border-l border-border/60 bg-surface/50 backdrop-blur-sm z-10 shrink-0">
+        <div className="flex flex-col gap-3">
+          {buttons.map(({ key, icon: Icon, label, onClick }) => (
+            <button key={key} onClick={onClick} className={btnClass} title={label} aria-label={label}>
+              <Icon className={iconClass} />
+            </button>
+          ))}
+        </div>
 
-        <button
-          onClick={toggleViewMode}
-          className={btnClass}
-          title={viewMode === "bubble" ? "切換經典閱讀模式" : "切換氣泡對話模式"}
-          aria-label={viewMode === "bubble" ? "切換經典閱讀模式" : "切換氣泡對話模式"}
-        >
-          {viewMode === "bubble" ? (
-            <BookOpen className={iconClass} />
-          ) : (
-            <MessageSquare className={iconClass} />
-          )}
-        </button>
-
-        {hasMessages && (
+        <div className="mt-auto pt-4 flex flex-col items-center">
           <button
-            onClick={onSearch}
+            onClick={onSettings}
             className={btnClass}
-            title="搜尋正文（Ctrl+F）"
-            aria-label="搜尋正文"
+            title="閱讀設定"
+            aria-label="閱讀設定"
           >
-            <Search className={iconClass} />
+            <Settings className={iconClass} />
           </button>
-        )}
+          <div className="w-8 h-px bg-border/60 mx-auto my-4" />
+          <p className="text-[10px] text-muted-foreground/50 text-center leading-tight px-1 [writing-mode:vertical-rl] rotate-180">
+            酒館閱讀器
+          </p>
+        </div>
+      </aside>
 
-        {hasMessages && (
+      {/* 手機／平板版：底部功能條 */}
+      <nav
+        className="lg:hidden fixed bottom-0 inset-x-0 z-10 bg-surface/90 backdrop-blur-xl border-t border-border/60 pb-[env(safe-area-inset-bottom)]"
+        aria-label="工具列"
+      >
+        <div className="h-14 flex items-center justify-around px-1 max-w-lg mx-auto">
+          {buttons.map(({ key, icon: Icon, label, onClick }) => (
+            <button key={key} onClick={onClick} className={mobileBtnClass} title={label} aria-label={label}>
+              <Icon className="w-5 h-5" />
+            </button>
+          ))}
           <button
-            onClick={onExport}
-            className={btnClass}
-            title="匯出為 TXT"
-            aria-label="匯出為 TXT"
+            onClick={onSettings}
+            className={mobileBtnClass}
+            title="閱讀設定"
+            aria-label="閱讀設定"
           >
-            <Download className={iconClass} />
+            <Settings className="w-5 h-5" />
           </button>
-        )}
-
-        {hasMessages && (
-          <button
-            onClick={onExportTavern}
-            className={btnClass}
-            title="匯出酒館純淨檔（JSON）"
-            aria-label="匯出酒館純淨檔（JSON）"
-          >
-            <FileJson className={iconClass} />
-          </button>
-        )}
-
-        {hasMessages && (
-          <button
-            onClick={onStats}
-            className={btnClass}
-            title="閱讀統計"
-            aria-label="閱讀統計"
-          >
-            <BarChart3 className={iconClass} />
-          </button>
-        )}
-
-        <button
-          onClick={onCloudSync}
-          className={btnClass}
-          title="雲端同步與備份"
-          aria-label="雲端同步與備份"
-        >
-          <Cloud className={iconClass} />
-        </button>
-      </div>
-
-      <div className="mt-auto pt-4">
-        <div className="w-8 h-px bg-border/60 mx-auto mb-4" />
-        <p className="text-[10px] text-muted-foreground/50 text-center leading-tight px-1 [writing-mode:vertical-rl] rotate-180">
-          酒館閱讀器
-        </p>
-      </div>
-    </aside>
+        </div>
+      </nav>
+    </>
   );
 }

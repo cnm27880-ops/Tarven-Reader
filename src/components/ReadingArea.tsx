@@ -225,7 +225,7 @@ export function ReadingArea({
         ref={scrollRef}
         className="flex-1 overflow-y-auto min-h-0 reader-scroll hide-scrollbar"
       >
-        <div className="w-full px-4 sm:px-8 lg:px-10 xl:px-14 2xl:px-20 py-4 sm:py-8 lg:py-10 reader-text">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-8 lg:px-10 py-4 sm:py-8 lg:py-10 reader-text">
           <div
             className="relative w-full"
             style={{ height: `${virtualizer.getTotalSize()}px` }}
