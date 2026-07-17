@@ -6,9 +6,16 @@ interface MessageNavigatorProps {
   messageCount: number;
   activeIndex: number;
   onJump: (index: number) => void;
+  /** 取得某一層的預覽（名稱與內容開頭），供 hover 提示。 */
+  getPreview: (index: number) => { name: string; text: string };
 }
 
-export function MessageNavigator({ messageCount, activeIndex, onJump }: MessageNavigatorProps) {
+export function MessageNavigator({
+  messageCount,
+  activeIndex,
+  onJump,
+  getPreview,
+}: MessageNavigatorProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const chapterCount = Math.max(1, Math.ceil(messageCount / CHAPTER_SIZE));
@@ -37,7 +44,7 @@ export function MessageNavigator({ messageCount, activeIndex, onJump }: MessageN
 
   return (
     <div
-      className="hidden sm:flex flex-col items-center justify-center w-7 shrink-0 py-3 select-none"
+      className="hidden sm:flex flex-col items-center w-8 shrink-0 py-2 select-none h-full"
       aria-label="訊息導覽"
     >
       <button
@@ -59,7 +66,7 @@ export function MessageNavigator({ messageCount, activeIndex, onJump }: MessageN
         <span className="block text-muted-foreground/40">/{chapterCount}</span>
       </span>
 
-      <div className="relative flex flex-col items-center flex-1 min-h-[120px] max-h-[calc(100vh-12rem)] w-full my-1">
+      <div className="relative flex flex-col items-center flex-1 min-h-[160px] w-full my-1">
         <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border/70" />
 
         <div className="relative flex flex-col justify-between h-full w-full py-1">
@@ -68,12 +75,13 @@ export function MessageNavigator({ messageCount, activeIndex, onJump }: MessageN
             const isHovered = hoverIndex === msgIndex;
             const ratio =
               chapterLength > 1 ? (msgIndex - chapterStart) / (chapterLength - 1) : 0;
+            const preview = isHovered ? getPreview(msgIndex) : null;
 
             return (
               <button
                 key={msgIndex}
                 type="button"
-                className="absolute left-1/2 -translate-x-1/2 group"
+                className="absolute left-1/2 -translate-x-1/2 group flex items-center justify-center w-8 py-1"
                 style={{ top: `${ratio * 100}%`, transform: "translate(-50%, -50%)" }}
                 onClick={() => onJump(msgIndex)}
                 onMouseEnter={() => setHoverIndex(msgIndex)}
@@ -85,23 +93,29 @@ export function MessageNavigator({ messageCount, activeIndex, onJump }: MessageN
                     block rounded-full transition-all duration-200
                     ${
                       isActive
-                        ? "w-2.5 h-2.5 bg-foreground shadow-sm shadow-foreground/30"
+                        ? "w-3 h-3 bg-foreground shadow-sm shadow-foreground/30"
                         : isHovered
-                          ? "w-2 h-1 bg-muted-foreground"
-                          : "w-1.5 h-0.5 bg-muted-foreground/40 group-hover:bg-muted-foreground/70"
+                          ? "w-2.5 h-1.5 bg-muted-foreground"
+                          : "w-2 h-1 bg-muted-foreground/40 group-hover:bg-muted-foreground/70"
                     }
                   `}
                 />
-                {isHovered && (
+                {preview && (
                   <span
                     className="
                       absolute right-full mr-2 top-1/2 -translate-y-1/2
-                      whitespace-nowrap text-[10px] px-1.5 py-0.5 rounded
-                      bg-surface border border-border/60 text-muted-foreground
-                      shadow-sm pointer-events-none
+                      w-56 max-w-[60vw] text-left
+                      px-2.5 py-1.5 rounded-lg
+                      bg-surface border border-border/70 text-muted-foreground
+                      shadow-lg pointer-events-none z-10
                     "
                   >
-                    #{msgIndex + 1}
+                    <span className="block text-[10px] font-medium text-accent tabular-nums mb-0.5">
+                      #{msgIndex + 1} · {preview.name}
+                    </span>
+                    <span className="block text-[11px] leading-snug text-foreground/85 line-clamp-2 break-all">
+                      {preview.text}
+                    </span>
                   </span>
                 )}
               </button>

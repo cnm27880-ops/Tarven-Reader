@@ -1,4 +1,4 @@
-import { Sun, Moon, MessageSquare, BookOpen, Download, FileJson, Cloud, Search } from "lucide-react";
+import { Sun, Moon, MessageSquare, BookOpen, Download, FileJson, Cloud, Search, BarChart3 } from "lucide-react";
 import type { Theme, ViewMode } from "../hooks/useChatManager";
 
 interface ToolbarProps {
@@ -10,6 +10,7 @@ interface ToolbarProps {
   onExportTavern: () => void;
   onCloudSync: () => void;
   onSearch: () => void;
+  onStats: () => void;
   hasMessages: boolean;
 }
 
@@ -22,6 +23,7 @@ export function Toolbar({
   onExportTavern,
   onCloudSync,
   onSearch,
+  onStats,
   hasMessages,
 }: ToolbarProps) {
   const iconClass =
@@ -94,6 +96,17 @@ export function Toolbar({
             aria-label="匯出酒館純淨檔（JSON）"
           >
             <FileJson className={iconClass} />
+          </button>
+        )}
+
+        {hasMessages && (
+          <button
+            onClick={onStats}
+            className={btnClass}
+            title="閱讀統計"
+            aria-label="閱讀統計"
+          >
+            <BarChart3 className={iconClass} />
           </button>
         )}
 

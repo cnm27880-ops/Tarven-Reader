@@ -1,15 +1,17 @@
 import { useRef, useState } from "react";
-import { Settings, Upload, X } from "lucide-react";
-import type { FontPreset } from "../hooks/useReaderSettings";
-import { FONT_PRESETS } from "../hooks/useReaderSettings";
+import { Check, Settings, Upload, X } from "lucide-react";
+import type { AccentColor, FontPreset } from "../hooks/useReaderSettings";
+import { ACCENT_COLORS, FONT_PRESETS } from "../hooks/useReaderSettings";
 import { MessageContent } from "./MessageContent";
 
 interface SettingsPanelProps {
   fontPreset: FontPreset;
   fontSize: number;
   customFontName: string | null;
+  accentColor: AccentColor;
   onFontPresetChange: (preset: FontPreset) => void;
   onFontSizeChange: (size: number) => void;
+  onAccentColorChange: (color: AccentColor) => void;
   onCustomFontLoad: (file: File) => Promise<string>;
 }
 
@@ -17,8 +19,10 @@ export function SettingsPanel({
   fontPreset,
   fontSize,
   customFontName,
+  accentColor,
   onFontPresetChange,
   onFontSizeChange,
+  onAccentColorChange,
   onCustomFontLoad,
 }: SettingsPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -151,6 +155,40 @@ export function SettingsPanel({
                     {fontError && (
                       <p className="text-xs text-red-500 mt-1.5 text-center">{fontError}</p>
                     )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2.5 block">
+                    主題色
+                  </label>
+                  <div className="flex gap-2.5">
+                    {ACCENT_COLORS.map((color) => (
+                      <button
+                        key={color.id}
+                        type="button"
+                        onClick={() => onAccentColorChange(color.id)}
+                        className={`
+                          w-9 h-9 rounded-full flex items-center justify-center
+                          transition-all duration-200 active:scale-90
+                          ${
+                            accentColor === color.id
+                              ? "ring-2 ring-offset-2 ring-offset-surface"
+                              : "hover:scale-110"
+                          }
+                        `}
+                        style={{
+                          backgroundColor: color.swatch,
+                          ...(accentColor === color.id
+                            ? ({ "--tw-ring-color": color.swatch } as React.CSSProperties)
+                            : {}),
+                        }}
+                        title={color.label}
+                        aria-label={`主題色：${color.label}`}
+                      >
+                        {accentColor === color.id && <Check className="w-4 h-4 text-white" />}
+                      </button>
+                    ))}
                   </div>
                 </div>
 

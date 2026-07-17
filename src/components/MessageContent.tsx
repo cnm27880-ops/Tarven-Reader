@@ -3,6 +3,8 @@ import { Fragment } from "react";
 interface MessageContentProps {
   text: string;
   className?: string;
+  /** 搜尋跳轉後要高亮的字句（大小寫不敏感）。 */
+  highlight?: string;
 }
 
 /**
@@ -11,26 +13,54 @@ interface MessageContentProps {
  * - `*action / aside*` styled as soft grey
  * Preserves whitespace / line breaks via parent `whitespace-pre-wrap`.
  */
-export function MessageContent({ text, className }: MessageContentProps) {
+export function MessageContent({ text, className, highlight }: MessageContentProps) {
   const parts = splitStyledSegments(text);
+
+  const render = (value: string, keyBase: string) =>
+    highlight ? renderWithHighlight(value, highlight, keyBase) : value;
 
   return (
     <span className={className}>
       {parts.map((part, i) =>
         part.type === "thought" ? (
           <span key={i} className="inner-thought">
-            {part.value}
+            {render(part.value, `t${i}`)}
           </span>
         ) : part.type === "aside" ? (
           <span key={i} className="soft-aside">
-            {part.value}
+            {render(part.value, `a${i}`)}
           </span>
         ) : (
-          <Fragment key={i}>{part.value}</Fragment>
+          <Fragment key={i}>{render(part.value, `p${i}`)}</Fragment>
         ),
       )}
     </span>
   );
+}
+
+function renderWithHighlight(value: string, term: string, keyBase: string) {
+  const lowerValue = value.toLowerCase();
+  const lowerTerm = term.toLowerCase();
+  if (!lowerTerm || !lowerValue.includes(lowerTerm)) return value;
+
+  const nodes: React.ReactNode[] = [];
+  let pos = 0;
+  let k = 0;
+  while (pos < value.length) {
+    const hit = lowerValue.indexOf(lowerTerm, pos);
+    if (hit === -1) {
+      nodes.push(value.slice(pos));
+      break;
+    }
+    if (hit > pos) nodes.push(value.slice(pos, hit));
+    nodes.push(
+      <mark key={`${keyBase}-${k++}`} className="search-flash">
+        {value.slice(hit, hit + term.length)}
+      </mark>,
+    );
+    pos = hit + term.length;
+  }
+  return nodes;
 }
 
 type TextPart = { type: "plain" | "thought" | "aside"; value: string };
