@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { CHAPTER_SIZE } from "../lib/utils";
 
 interface MessageNavigatorProps {
   messageCount: number;
-  scrollContainerRef: React.RefObject<HTMLElement | null>;
+  activeIndex: number;
+  onJump: (index: number) => void;
 }
 
-export function MessageNavigator({ messageCount, scrollContainerRef }: MessageNavigatorProps) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+export function MessageNavigator({ messageCount, activeIndex, onJump }: MessageNavigatorProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const chapterCount = Math.max(1, Math.ceil(messageCount / CHAPTER_SIZE));
@@ -22,60 +21,9 @@ export function MessageNavigator({ messageCount, scrollContainerRef }: MessageNa
 
   const markerIndices = Array.from({ length: chapterLength }, (_, i) => chapterStart + i);
 
-  const updateActiveFromScroll = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container || messageCount === 0) return;
-
-    // 捲到最底時視為在讀最後一則（短章節無法把章首捲到頂端）。
-    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 4) {
-      setActiveIndex(messageCount - 1);
-      return;
-    }
-
-    // 目前閱讀中的訊息 = 最後一則頂端仍在「閱讀行」上方的訊息；
-    // 訊息依序排列，用二分搜尋避免逐則量測。
-    const refLine =
-      container.getBoundingClientRect().top + Math.min(200, container.clientHeight / 3);
-
-    let lo = 0;
-    let hi = messageCount - 1;
-    let current = 0;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      const el = document.getElementById(`message-${mid}`);
-      if (!el) return;
-      if (el.getBoundingClientRect().top <= refLine) {
-        current = mid;
-        lo = mid + 1;
-      } else {
-        hi = mid - 1;
-      }
-    }
-
-    setActiveIndex(current);
-  }, [messageCount, scrollContainerRef]);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    updateActiveFromScroll();
-    container.addEventListener("scroll", updateActiveFromScroll, { passive: true });
-    return () => container.removeEventListener("scroll", updateActiveFromScroll);
-  }, [scrollContainerRef, updateActiveFromScroll, messageCount]);
-
-  const jumpToMessage = (index: number, behavior: ScrollBehavior = "smooth") => {
-    const el = document.getElementById(`message-${index}`);
-    if (el) {
-      el.scrollIntoView({ behavior, block: "start" });
-      setActiveIndex(index);
-    }
-  };
-
   const jumpToChapter = (chapterIndex: number) => {
     const clamped = Math.max(0, Math.min(chapterIndex, chapterCount - 1));
-    // 跨章距離長，平滑捲動途中 scroll 監聽會把章節蓋回去，改用瞬間跳轉。
-    jumpToMessage(clamped * CHAPTER_SIZE, "instant");
+    onJump(clamped * CHAPTER_SIZE);
   };
 
   if (messageCount < 2) return null;
@@ -111,10 +59,7 @@ export function MessageNavigator({ messageCount, scrollContainerRef }: MessageNa
         <span className="block text-muted-foreground/40">/{chapterCount}</span>
       </span>
 
-      <div
-        ref={trackRef}
-        className="relative flex flex-col items-center flex-1 min-h-[120px] max-h-[calc(100vh-12rem)] w-full my-1"
-      >
+      <div className="relative flex flex-col items-center flex-1 min-h-[120px] max-h-[calc(100vh-12rem)] w-full my-1">
         <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border/70" />
 
         <div className="relative flex flex-col justify-between h-full w-full py-1">
@@ -130,7 +75,7 @@ export function MessageNavigator({ messageCount, scrollContainerRef }: MessageNa
                 type="button"
                 className="absolute left-1/2 -translate-x-1/2 group"
                 style={{ top: `${ratio * 100}%`, transform: "translate(-50%, -50%)" }}
-                onClick={() => jumpToMessage(msgIndex)}
+                onClick={() => onJump(msgIndex)}
                 onMouseEnter={() => setHoverIndex(msgIndex)}
                 onMouseLeave={() => setHoverIndex(null)}
                 aria-label={`跳至第 ${msgIndex + 1} 則訊息`}

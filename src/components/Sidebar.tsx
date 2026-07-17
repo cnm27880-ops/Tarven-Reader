@@ -13,7 +13,8 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { CHAPTER_SIZE, scrollToChapter } from "../lib/utils";
+import { CHAPTER_SIZE } from "../lib/utils";
+import { jumpToChapter } from "../lib/readerNav";
 
 interface SidebarProps {
   rooms: ChatRoom[];
@@ -52,7 +53,7 @@ export function Sidebar({
 
   const handleChapterClick = (chapterIndex: number) => {
     setActiveChapter(chapterIndex);
-    scrollToChapter(chapterIndex);
+    jumpToChapter(chapterIndex);
     onClose();
   };
 

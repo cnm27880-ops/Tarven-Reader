@@ -12,13 +12,17 @@ import type { TextLocale } from "./lib/chinese";
 import { exportCleanedTavernFile, exportToTxt } from "./lib/utils";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { CloudSyncPanel } from "./components/CloudSyncPanel";
+import { ExportNameModal } from "./components/ExportNameModal";
 import "./index.css";
+
+type PendingExport = { type: "txt" | "tavern"; defaultName: string };
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCloudSyncOpen, setIsCloudSyncOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingExport, setPendingExport] = useState<PendingExport | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -101,13 +105,31 @@ function App() {
     setPendingFile(null);
   };
 
+  const today = () => new Date().toISOString().slice(0, 10);
+
   const handleExport = () => {
-    exportToTxt(messages);
+    if (messages.length === 0) return;
+    setPendingExport({
+      type: "txt",
+      defaultName: `${activeRoom?.name ?? "酒館匯出"}_${today()}`,
+    });
   };
 
   const handleExportTavern = () => {
     if (!activeRoom) return;
-    exportCleanedTavernFile(activeRoom);
+    setPendingExport({
+      type: "tavern",
+      defaultName: `${activeRoom.name}_純淨版_${today()}`,
+    });
+  };
+
+  const handleExportConfirm = (baseName: string) => {
+    if (pendingExport?.type === "txt") {
+      exportToTxt(messages, baseName);
+    } else if (pendingExport?.type === "tavern" && activeRoom) {
+      exportCleanedTavernFile(activeRoom, baseName);
+    }
+    setPendingExport(null);
   };
 
   const openCloudSync = () => {
@@ -233,6 +255,7 @@ function App() {
         <ReadingArea
           messages={messages}
           viewMode={viewMode}
+          roomId={activeRoomId}
           roomName={activeRoom?.name}
           onUploadClick={triggerFileInput}
         />
@@ -250,6 +273,16 @@ function App() {
       </Layout>
 
       <CloudSyncPanel isOpen={isCloudSyncOpen} onClose={() => setIsCloudSyncOpen(false)} />
+
+      {pendingExport && (
+        <ExportNameModal
+          title={pendingExport.type === "txt" ? "匯出為 TXT" : "匯出酒館純淨檔"}
+          defaultName={pendingExport.defaultName}
+          extHint={pendingExport.type === "txt" ? ".txt" : ".jsonl / .json"}
+          onConfirm={handleExportConfirm}
+          onCancel={() => setPendingExport(null)}
+        />
+      )}
 
       <SettingsPanel
         fontPreset={readerSettings.fontPreset}

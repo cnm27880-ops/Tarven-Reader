@@ -216,23 +216,21 @@ export function getInitials(name: string): string {
   return trimmed.slice(0, 2);
 }
 
-export function exportToTxt(messages: ChatMessage[]) {
+/** 移除檔名中的非法字元。 */
+export function sanitizeFileName(name: string): string {
+  return name.replace(/[\\/:*?"<>|]/g, "_").trim();
+}
+
+export function exportToTxt(messages: ChatMessage[], baseName?: string) {
   if (messages.length === 0) return;
 
   const content = messages
     .map((msg) => `${msg.name}:\n${msg.mes}`)
     .join("\n\n────────────────────────────────\n\n");
 
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `酒館匯出_${new Date().toISOString().slice(0, 10)}.txt`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const name =
+    sanitizeFileName(baseName ?? "") || `酒館匯出_${new Date().toISOString().slice(0, 10)}`;
+  downloadBlob(content, `${name}.txt`, "text/plain;charset=utf-8");
 }
 
 function downloadBlob(content: string, fileName: string, mime: string) {
@@ -285,8 +283,10 @@ function toCleanedRawMessage(rawMsg: SillyTavernMessage): SillyTavernMessage {
  */
 export function exportCleanedTavernFile(
   room: { name: string; rawContent?: string; messages: ChatMessage[] },
+  baseName?: string,
 ) {
   const date = new Date().toISOString().slice(0, 10);
+  const fileBase = sanitizeFileName(baseName ?? "") || `${room.name}_純淨版_${date}`;
 
   if (room.rawContent) {
     const trimmed = room.rawContent.trim();
@@ -317,7 +317,7 @@ export function exportCleanedTavernFile(
       }
       downloadBlob(
         JSON.stringify(output, null, 2),
-        `${room.name}_純淨版_${date}.json`,
+        `${fileBase}.json`,
         "application/json;charset=utf-8",
       );
       return;
@@ -340,7 +340,7 @@ export function exportCleanedTavernFile(
 
     downloadBlob(
       lines.join("\n"),
-      `${room.name}_純淨版_${date}.jsonl`,
+      `${fileBase}.jsonl`,
       "application/jsonl;charset=utf-8",
     );
     return;
@@ -358,23 +358,9 @@ export function exportCleanedTavernFile(
 
   downloadBlob(
     lines.join("\n"),
-    `${room.name}_純淨版_${date}.jsonl`,
+    `${fileBase}.jsonl`,
     "application/jsonl;charset=utf-8",
   );
-}
-
-export function scrollToChapter(chapterIndex: number) {
-  const el = document.getElementById(`chapter-${chapterIndex}`);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
-
-export function scrollToMessage(messageIndex: number) {
-  const el = document.getElementById(`message-${messageIndex}`);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 }
 
 export function applyLocaleToMessage(

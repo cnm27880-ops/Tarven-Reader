@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { ChatMessage, SillyTavernMessage } from "../types/chat";
+import { ensureConverters } from "../lib/chinese";
 import type { TextLocale } from "../lib/chinese";
 import type { ChatRoom } from "../lib/chatStorage";
 import {
@@ -16,6 +17,7 @@ import {
   getDedupeKey,
   isUserMessage,
 } from "../lib/utils";
+import { clearReadingProgress } from "../lib/readerNav";
 
 export type Theme = "light" | "dark";
 export type ViewMode = "bubble" | "classic";
@@ -303,6 +305,7 @@ export function useChatManager() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
       const meta = await deleteRoomFromDB(roomId);
+      clearReadingProgress(roomId);
       const remaining = roomsRef.current.filter((r) => r.id !== roomId);
       setRooms(remaining);
 
@@ -334,6 +337,7 @@ export function useChatManager() {
       reader.onload = (e) => {
         setTimeout(async () => {
           try {
+            await ensureConverters();
             const content = e.target?.result as string;
             const parsed = parseJsonContent(content);
             const rawMessages = extractMessages(parsed);
