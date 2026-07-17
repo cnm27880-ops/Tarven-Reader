@@ -1,80 +1,73 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
+import { CHAPTER_SIZE } from "../lib/utils";
 
 interface MessageNavigatorProps {
   messageCount: number;
-  scrollContainerRef: React.RefObject<HTMLElement | null>;
+  activeIndex: number;
+  onJump: (index: number) => void;
 }
 
-const MAX_MARKERS = 120;
-
-export function MessageNavigator({ messageCount, scrollContainerRef }: MessageNavigatorProps) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+export function MessageNavigator({ messageCount, activeIndex, onJump }: MessageNavigatorProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
-  const markerCount = Math.min(messageCount, MAX_MARKERS);
-  const step = messageCount > MAX_MARKERS ? Math.ceil(messageCount / MAX_MARKERS) : 1;
-
-  const markerIndices = Array.from({ length: markerCount }, (_, i) =>
-    messageCount > MAX_MARKERS ? Math.min(i * step, messageCount - 1) : i,
+  const chapterCount = Math.max(1, Math.ceil(messageCount / CHAPTER_SIZE));
+  const activeChapter = Math.min(
+    Math.floor(activeIndex / CHAPTER_SIZE),
+    chapterCount - 1,
   );
+  const chapterStart = activeChapter * CHAPTER_SIZE;
+  const chapterLength = Math.min(CHAPTER_SIZE, messageCount - chapterStart);
 
-  const updateActiveFromScroll = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container || messageCount === 0) return;
+  const markerIndices = Array.from({ length: chapterLength }, (_, i) => chapterStart + i);
 
-    const containerTop = container.getBoundingClientRect().top;
-    let closest = 0;
-    let closestDist = Infinity;
-
-    for (let i = 0; i < messageCount; i++) {
-      const el = document.getElementById(`message-${i}`);
-      if (!el) continue;
-      const dist = Math.abs(el.getBoundingClientRect().top - containerTop - 80);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closest = i;
-      }
-    }
-
-    setActiveIndex(closest);
-  }, [messageCount, scrollContainerRef]);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    updateActiveFromScroll();
-    container.addEventListener("scroll", updateActiveFromScroll, { passive: true });
-    return () => container.removeEventListener("scroll", updateActiveFromScroll);
-  }, [scrollContainerRef, updateActiveFromScroll, messageCount]);
-
-  const jumpToMessage = (index: number) => {
-    const el = document.getElementById(`message-${index}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      setActiveIndex(index);
-    }
+  const jumpToChapter = (chapterIndex: number) => {
+    const clamped = Math.max(0, Math.min(chapterIndex, chapterCount - 1));
+    onJump(clamped * CHAPTER_SIZE);
   };
 
   if (messageCount < 2) return null;
 
+  const chapterBtnClass = `
+    p-1 rounded-md text-muted-foreground/70
+    hover:text-foreground hover:bg-muted/50
+    disabled:opacity-25 disabled:pointer-events-none
+    transition-colors
+  `;
+
   return (
     <div
-      className="hidden sm:flex flex-col items-center justify-center w-5 shrink-0 py-4 select-none"
+      className="hidden sm:flex flex-col items-center justify-center w-7 shrink-0 py-3 select-none"
       aria-label="訊息導覽"
     >
-      <div
-        ref={trackRef}
-        className="relative flex flex-col items-center h-full min-h-[120px] max-h-[calc(100vh-8rem)] w-full"
+      <button
+        type="button"
+        className={chapterBtnClass}
+        onClick={() => jumpToChapter(activeChapter - 1)}
+        disabled={activeChapter === 0}
+        title="上一章"
+        aria-label="上一章"
       >
+        <ChevronUp className="w-4 h-4" />
+      </button>
+
+      <span
+        className="my-1 text-[10px] text-muted-foreground/70 tabular-nums leading-tight text-center"
+        title={`第 ${activeChapter + 1} 章 / 共 ${chapterCount} 章`}
+      >
+        {activeChapter + 1}
+        <span className="block text-muted-foreground/40">/{chapterCount}</span>
+      </span>
+
+      <div className="relative flex flex-col items-center flex-1 min-h-[120px] max-h-[calc(100vh-12rem)] w-full my-1">
         <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border/70" />
 
         <div className="relative flex flex-col justify-between h-full w-full py-1">
           {markerIndices.map((msgIndex) => {
             const isActive = msgIndex === activeIndex;
             const isHovered = hoverIndex === msgIndex;
-            const ratio = messageCount > 1 ? msgIndex / (messageCount - 1) : 0;
+            const ratio =
+              chapterLength > 1 ? (msgIndex - chapterStart) / (chapterLength - 1) : 0;
 
             return (
               <button
@@ -82,7 +75,7 @@ export function MessageNavigator({ messageCount, scrollContainerRef }: MessageNa
                 type="button"
                 className="absolute left-1/2 -translate-x-1/2 group"
                 style={{ top: `${ratio * 100}%`, transform: "translate(-50%, -50%)" }}
-                onClick={() => jumpToMessage(msgIndex)}
+                onClick={() => onJump(msgIndex)}
                 onMouseEnter={() => setHoverIndex(msgIndex)}
                 onMouseLeave={() => setHoverIndex(null)}
                 aria-label={`跳至第 ${msgIndex + 1} 則訊息`}
@@ -116,6 +109,17 @@ export function MessageNavigator({ messageCount, scrollContainerRef }: MessageNa
           })}
         </div>
       </div>
+
+      <button
+        type="button"
+        className={chapterBtnClass}
+        onClick={() => jumpToChapter(activeChapter + 1)}
+        disabled={activeChapter >= chapterCount - 1}
+        title="下一章"
+        aria-label="下一章"
+      >
+        <ChevronDown className="w-4 h-4" />
+      </button>
     </div>
   );
 }

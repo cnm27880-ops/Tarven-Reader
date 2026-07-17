@@ -1,4 +1,4 @@
-import { Sun, Moon, MessageSquare, BookOpen, Download } from "lucide-react";
+import { Sun, Moon, MessageSquare, BookOpen, Download, FileJson, Cloud, Search } from "lucide-react";
 import type { Theme, ViewMode } from "../hooks/useChatManager";
 
 interface ToolbarProps {
@@ -7,6 +7,9 @@ interface ToolbarProps {
   viewMode: ViewMode;
   toggleViewMode: () => void;
   onExport: () => void;
+  onExportTavern: () => void;
+  onCloudSync: () => void;
+  onSearch: () => void;
   hasMessages: boolean;
 }
 
@@ -16,6 +19,9 @@ export function Toolbar({
   viewMode,
   toggleViewMode,
   onExport,
+  onExportTavern,
+  onCloudSync,
+  onSearch,
   hasMessages,
 }: ToolbarProps) {
   const iconClass =
@@ -60,6 +66,17 @@ export function Toolbar({
 
         {hasMessages && (
           <button
+            onClick={onSearch}
+            className={btnClass}
+            title="搜尋正文（Ctrl+F）"
+            aria-label="搜尋正文"
+          >
+            <Search className={iconClass} />
+          </button>
+        )}
+
+        {hasMessages && (
+          <button
             onClick={onExport}
             className={btnClass}
             title="匯出為 TXT"
@@ -68,6 +85,26 @@ export function Toolbar({
             <Download className={iconClass} />
           </button>
         )}
+
+        {hasMessages && (
+          <button
+            onClick={onExportTavern}
+            className={btnClass}
+            title="匯出酒館純淨檔（JSON）"
+            aria-label="匯出酒館純淨檔（JSON）"
+          >
+            <FileJson className={iconClass} />
+          </button>
+        )}
+
+        <button
+          onClick={onCloudSync}
+          className={btnClass}
+          title="雲端同步與備份"
+          aria-label="雲端同步與備份"
+        >
+          <Cloud className={iconClass} />
+        </button>
       </div>
 
       <div className="mt-auto pt-4">

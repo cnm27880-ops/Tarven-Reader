@@ -66,7 +66,7 @@ export function SettingsPanel({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-[105] flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 z-[105] flex items-end sm:items-center justify-center p-4" data-app-modal>
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
             onClick={() => setIsOpen(false)}
@@ -177,7 +177,7 @@ export function SettingsPanel({
                 <p
                   className="text-muted-foreground leading-relaxed p-3 rounded-xl bg-muted/30 border border-border/40 reader-text"
                 >
-                  <MessageContent text="預覽文字：**這是內心話的樣式**，一般敘述文字則維持原色。" />
+                  <MessageContent text="預覽文字：**這是內心話的樣式**，*這是星號動作描述的樣式*，一般敘述文字則維持原色。" />
                 </p>
               </div>
             </div>

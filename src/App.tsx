@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { AlertCircle, Loader2, X } from "lucide-react";
+import { AlertCircle, CloudDownload, Loader2, X } from "lucide-react";
 import { Layout } from "./components/Layout";
 import { Sidebar } from "./components/Sidebar";
 import { ReadingArea } from "./components/ReadingArea";
@@ -9,14 +9,23 @@ import { useChatManager } from "./hooks/useChatManager";
 import type { ImportMode } from "./hooks/useChatManager";
 import { useReaderSettings } from "./hooks/useReaderSettings";
 import type { TextLocale } from "./lib/chinese";
-import { exportToTxt } from "./lib/utils";
+import { exportCleanedTavernFile, exportToTxt } from "./lib/utils";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { CloudSyncPanel } from "./components/CloudSyncPanel";
+import { ExportNameModal } from "./components/ExportNameModal";
+import { SearchPanel } from "./components/SearchPanel";
+import { useDriveAutoSync } from "./hooks/useDriveAutoSync";
 import "./index.css";
+
+type PendingExport = { type: "txt" | "tavern"; defaultName: string };
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCloudSyncOpen, setIsCloudSyncOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingExport, setPendingExport] = useState<PendingExport | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -51,6 +60,20 @@ function App() {
     const timer = window.setTimeout(() => clearError(), 8000);
     return () => window.clearTimeout(timer);
   }, [error, clearError]);
+
+  const autoSync = useDriveAutoSync(rooms, isHydrating);
+
+  // Ctrl/Cmd+F 開啟站內搜尋（虛擬捲動下瀏覽器原生搜尋找不到未渲染的內容）
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "f" && messages.length > 0) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [messages.length]);
 
   const queueFile = (file: File) => {
     setPendingFile(file);
@@ -99,8 +122,36 @@ function App() {
     setPendingFile(null);
   };
 
+  const today = () => new Date().toISOString().slice(0, 10);
+
   const handleExport = () => {
-    exportToTxt(messages);
+    if (messages.length === 0) return;
+    setPendingExport({
+      type: "txt",
+      defaultName: `${activeRoom?.name ?? "酒館匯出"}_${today()}`,
+    });
+  };
+
+  const handleExportTavern = () => {
+    if (!activeRoom) return;
+    setPendingExport({
+      type: "tavern",
+      defaultName: `${activeRoom.name}_純淨版_${today()}`,
+    });
+  };
+
+  const handleExportConfirm = (baseName: string) => {
+    if (pendingExport?.type === "txt") {
+      exportToTxt(messages, baseName);
+    } else if (pendingExport?.type === "tavern" && activeRoom) {
+      exportCleanedTavernFile(activeRoom, baseName);
+    }
+    setPendingExport(null);
+  };
+
+  const openCloudSync = () => {
+    setIsCloudSyncOpen(true);
+    setIsSidebarOpen(false);
   };
 
   const handleSwitchRoom = (roomId: string) => {
@@ -128,7 +179,7 @@ function App() {
     >
       <input
         type="file"
-        accept=".json,.jsonl,application/json"
+        accept=".json,.jsonl,.txt,.md,.markdown,application/json,text/plain"
         className="hidden"
         ref={fileInputRef}
         onChange={handleFileInput}
@@ -150,7 +201,7 @@ function App() {
             <h2 className="text-xl sm:text-3xl font-serif text-foreground tracking-wide">
               放開以匯入檔案
             </h2>
-            <p className="text-muted-foreground text-sm mt-2">支援 .json / .jsonl 格式</p>
+            <p className="text-muted-foreground text-sm mt-2">支援 .json / .jsonl / .txt / .md 格式</p>
           </div>
         </div>
       )}
@@ -213,11 +264,19 @@ function App() {
           onRenameRoom={(id, name) => void renameRoom(id, name)}
           onDeleteRoom={(id) => void removeRoom(id)}
           onImportClick={triggerFileInput}
+          onExportTxt={handleExport}
+          onExportTavern={handleExportTavern}
+          onCloudSync={openCloudSync}
+          onSearch={() => {
+            setIsSearchOpen(true);
+            setIsSidebarOpen(false);
+          }}
         />
 
         <ReadingArea
           messages={messages}
           viewMode={viewMode}
+          roomId={activeRoomId}
           roomName={activeRoom?.name}
           onUploadClick={triggerFileInput}
         />
@@ -228,9 +287,70 @@ function App() {
           viewMode={viewMode}
           toggleViewMode={toggleViewMode}
           onExport={handleExport}
+          onExportTavern={handleExportTavern}
+          onCloudSync={openCloudSync}
+          onSearch={() => setIsSearchOpen(true)}
           hasMessages={messages.length > 0}
         />
       </Layout>
+
+      <SearchPanel
+        messages={messages}
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
+
+      {autoSync.restorePromptTime !== null && (
+        <div
+          className="
+            fixed bottom-4 left-1/2 -translate-x-1/2 z-[100]
+            flex items-start gap-3
+            max-w-md w-[calc(100%-2rem)]
+            px-4 py-3 rounded-xl
+            bg-surface border border-accent/40
+            shadow-lg animate-toast-in
+          "
+          role="alertdialog"
+          aria-label="雲端備份較新"
+        >
+          <CloudDownload className="w-5 h-5 shrink-0 mt-0.5 text-accent" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-foreground leading-relaxed">
+              雲端有較新的備份（
+              {new Date(autoSync.restorePromptTime).toLocaleString()}
+              ），要還原到這台裝置嗎？
+            </p>
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => void autoSync.confirmRestore()}
+                className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-medium hover:opacity-90"
+              >
+                還原雲端版本
+              </button>
+              <button
+                type="button"
+                onClick={autoSync.dismissRestore}
+                className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted/40"
+              >
+                保留本機版本
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <CloudSyncPanel isOpen={isCloudSyncOpen} onClose={() => setIsCloudSyncOpen(false)} />
+
+      {pendingExport && (
+        <ExportNameModal
+          title={pendingExport.type === "txt" ? "匯出為 TXT" : "匯出酒館純淨檔"}
+          defaultName={pendingExport.defaultName}
+          extHint={pendingExport.type === "txt" ? ".txt" : ".jsonl / .json"}
+          onConfirm={handleExportConfirm}
+          onCancel={() => setPendingExport(null)}
+        />
+      )}
 
       <SettingsPanel
         fontPreset={readerSettings.fontPreset}

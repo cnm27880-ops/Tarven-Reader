@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { ChatMessage, SillyTavernMessage } from "../types/chat";
+import { ensureConverters } from "../lib/chinese";
 import type { TextLocale } from "../lib/chinese";
 import type { ChatRoom } from "../lib/chatStorage";
 import {
@@ -16,6 +17,9 @@ import {
   getDedupeKey,
   isUserMessage,
 } from "../lib/utils";
+import { clearReadingProgress } from "../lib/readerNav";
+import { clearBookmarks } from "../lib/bookmarks";
+import { isTextNovelFile, parseTextNovel } from "../lib/textImport";
 
 export type Theme = "light" | "dark";
 export type ViewMode = "bubble" | "classic";
@@ -241,6 +245,12 @@ export function useChatManager() {
     } else {
       document.documentElement.classList.remove("dark");
     }
+
+    // PWA 狀態列顏色跟隨主題
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute("content", theme === "dark" ? "#141318" : "#f8f7f4");
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -303,6 +313,8 @@ export function useChatManager() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
       const meta = await deleteRoomFromDB(roomId);
+      clearReadingProgress(roomId);
+      clearBookmarks(roomId);
       const remaining = roomsRef.current.filter((r) => r.id !== roomId);
       setRooms(remaining);
 
@@ -320,8 +332,9 @@ export function useChatManager() {
   const parseSillyTavernJson = useCallback(
     (file: File, locale: TextLocale, mode: ImportMode = "new") => {
       const lowerName = file.name.toLowerCase();
-      if (!lowerName.endsWith(".json") && !lowerName.endsWith(".jsonl")) {
-        setError("請上傳 SillyTavern 匯出的 .json 或 .jsonl 檔案。");
+      const isTextNovel = isTextNovelFile(file.name);
+      if (!lowerName.endsWith(".json") && !lowerName.endsWith(".jsonl") && !isTextNovel) {
+        setError("請上傳 SillyTavern 匯出的 .json / .jsonl，或 .txt / .md 小說檔案。");
         return;
       }
 
@@ -334,9 +347,16 @@ export function useChatManager() {
       reader.onload = (e) => {
         setTimeout(async () => {
           try {
+            await ensureConverters();
             const content = e.target?.result as string;
-            const parsed = parseJsonContent(content);
-            const rawMessages = extractMessages(parsed);
+
+            let rawMessages: SillyTavernMessage[];
+            if (isTextNovel) {
+              rawMessages = parseTextNovel(content, file.name);
+            } else {
+              const parsed = parseJsonContent(content);
+              rawMessages = extractMessages(parsed);
+            }
 
             if (rawMessages.length === 0) {
               throw new Error("上傳的檔案中沒有找到任何訊息。");
@@ -350,10 +370,19 @@ export function useChatManager() {
 
               const existing = roomsRef.current.find((r) => r.id === roomId);
               if (existing) {
+                // 已有原始檔時只追加訊息行，維持單一標頭的有效 jsonl。
+                const appendedRaw = existing.rawContent
+                  ? existing.rawContent.trimEnd() +
+                    "\n" +
+                    rawMessages.map((m) => JSON.stringify(m)).join("\n")
+                  : isTextNovel
+                    ? undefined
+                    : content;
                 const updated: ChatRoom = {
                   ...existing,
                   messages: merged,
                   locale,
+                  rawContent: appendedRaw,
                   updatedAt: Date.now(),
                 };
                 await saveRoom(updated);
@@ -370,6 +399,9 @@ export function useChatManager() {
                 messages: processed,
                 locale,
                 sourceFileName: file.name,
+                // 純文字小說沒有酒館原始結構，不保存 rawContent
+                // （純淨檔匯出會退回用訊息重建）。
+                rawContent: isTextNovel ? undefined : content,
                 createdAt: now,
                 updatedAt: now,
               };
