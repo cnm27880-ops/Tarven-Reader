@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FileText, X } from "lucide-react";
 import type { TextLocale } from "../lib/chinese";
 import { LOCALE_LABELS } from "../lib/chinese";
 import type { ImportMode } from "../hooks/useChatManager";
 import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface ImportModalProps {
   fileName: string;
@@ -23,8 +24,10 @@ export function ImportModal({
   const [locale, setLocale] = useState<TextLocale>(defaultLocale);
   const [mode, setMode] = useState<ImportMode>("new");
   const canAppend = Boolean(currentRoomName);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEscapeKey(true, onCancel);
+  useFocusTrap(cardRef, true);
 
   return (
     <div
@@ -38,7 +41,11 @@ export function ImportModal({
         onClick={onCancel}
       />
 
-      <div className="relative w-full max-w-md rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden">
+      <div
+        ref={cardRef}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden focus:outline-none"
+      >
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-accent/70 to-accent/40" />
 
         <div className="p-6">

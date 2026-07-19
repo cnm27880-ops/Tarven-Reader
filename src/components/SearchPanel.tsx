@@ -4,6 +4,7 @@ import type { ChatMessage } from "../types/chat";
 import { CHAPTER_SIZE } from "../lib/utils";
 import { jumpToMessage, publishSearchHighlight } from "../lib/readerNav";
 import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface SearchPanelProps {
   messages: ChatMessage[];
@@ -60,6 +61,7 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(query), 200);
@@ -73,9 +75,7 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
   }, [debounced]);
 
   useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => inputRef.current?.focus());
-    } else {
+    if (!isOpen) {
       setQuery("");
       setDebounced("");
     }
@@ -88,6 +88,7 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
   }, [selected]);
 
   useEscapeKey(isOpen, onClose);
+  useFocusTrap(cardRef, isOpen);
 
   if (!isOpen) return null;
 
@@ -116,7 +117,11 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[70vh]">
+      <div
+        ref={cardRef}
+        tabIndex={-1}
+        className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[70vh] focus:outline-none"
+      >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input

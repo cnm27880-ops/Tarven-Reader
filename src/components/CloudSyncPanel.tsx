@@ -14,6 +14,7 @@ import {
   importAllData,
   isBackupPayload,
 } from "../lib/chatStorage";
+import type { AutoSyncState } from "../lib/driveSync";
 import {
   downloadBackup,
   getAutoSyncEnabled,
@@ -23,24 +24,37 @@ import {
   setAutoSyncEnabled,
   uploadBackup,
 } from "../lib/driveSync";
+import type { AutoSyncStatus } from "../hooks/useDriveAutoSync";
 import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface CloudSyncPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  /** 背景自動同步目前的即時狀態（本次分頁 session）。 */
+  autoSyncStatus: AutoSyncStatus;
+  /** 背景自動同步上一次的結果，存在 localStorage，重新整理後仍看得到。 */
+  autoSyncLastResult: AutoSyncState | null;
 }
 
 type Status = { kind: "info" | "success" | "error"; text: string } | null;
 
-export function CloudSyncPanel({ isOpen, onClose }: CloudSyncPanelProps) {
+export function CloudSyncPanel({
+  isOpen,
+  onClose,
+  autoSyncStatus,
+  autoSyncLastResult,
+}: CloudSyncPanelProps) {
   const [clientId, setClientId] = useState(getSavedClientId);
   const [status, setStatus] = useState<Status>(null);
   const [busy, setBusy] = useState<"upload" | "download" | "file" | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [autoSync, setAutoSync] = useState(getAutoSyncEnabled);
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEscapeKey(isOpen, onClose);
+  useFocusTrap(cardRef, isOpen);
 
   if (!isOpen) return null;
 
@@ -187,7 +201,11 @@ export function CloudSyncPanel({ isOpen, onClose }: CloudSyncPanelProps) {
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-md rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden max-h-[85vh] flex flex-col">
+      <div
+        ref={cardRef}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden max-h-[85vh] flex flex-col focus:outline-none"
+      >
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-accent/70 to-accent/40" />
 
         <div className="p-5 overflow-y-auto">
@@ -318,6 +336,26 @@ export function CloudSyncPanel({ isOpen, onClose }: CloudSyncPanelProps) {
                   開啟網站時瀏覽器可能會短暫顯示 Google 授權視窗。
                 </span>
               </label>
+
+              {autoSync && (
+                <p
+                  className={`mt-2 text-[11px] leading-relaxed pl-6 ${
+                    autoSyncStatus === "error" || autoSyncLastResult?.outcome === "error"
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {autoSyncStatus === "syncing"
+                    ? "正在自動同步…"
+                    : autoSyncLastResult
+                      ? autoSyncLastResult.outcome === "synced"
+                        ? `上次自動同步成功：${new Date(autoSyncLastResult.time).toLocaleString()}`
+                        : `上次自動同步失敗（${new Date(autoSyncLastResult.time).toLocaleString()}）：${
+                            autoSyncLastResult.message ?? "原因不明"
+                          }，將於下次重試`
+                      : "尚未完成過自動同步。"}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-3">

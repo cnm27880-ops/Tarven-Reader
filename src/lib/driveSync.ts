@@ -70,6 +70,36 @@ export function setAutoSyncEnabled(enabled: boolean): void {
   }
 }
 
+const AUTO_SYNC_STATE_KEY = "driveAutoSyncState";
+
+/**
+ * 背景自動同步的最後結果，存進 localStorage 讓「雲端同步」面板
+ * 重新整理頁面後仍能顯示——自動同步是背景靜默進行的，使用者需要
+ * 有地方確認它真的有在動、或知道上次為什麼失敗。
+ */
+export interface AutoSyncState {
+  time: number;
+  outcome: "synced" | "error";
+  message?: string;
+}
+
+export function getAutoSyncState(): AutoSyncState | null {
+  try {
+    const raw = localStorage.getItem(AUTO_SYNC_STATE_KEY);
+    return raw ? (JSON.parse(raw) as AutoSyncState) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setAutoSyncState(state: AutoSyncState): void {
+  try {
+    localStorage.setItem(AUTO_SYNC_STATE_KEY, JSON.stringify(state));
+  } catch {
+    /* storage full — status display is best-effort */
+  }
+}
+
 let gisLoading: Promise<void> | null = null;
 
 function loadGis(): Promise<void> {

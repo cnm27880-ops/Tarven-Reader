@@ -3,6 +3,7 @@ import { Check, Upload, X } from "lucide-react";
 import type { AccentColor, FontPreset } from "../hooks/useReaderSettings";
 import { ACCENT_COLORS, FONT_PRESETS } from "../hooks/useReaderSettings";
 import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import { MessageContent } from "./MessageContent";
 
 interface SettingsPanelProps {
@@ -33,8 +34,10 @@ export function SettingsPanel({
   const [fontError, setFontError] = useState<string | null>(null);
   const [isLoadingFont, setIsLoadingFont] = useState(false);
   const fontInputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEscapeKey(isOpen, onClose);
+  useFocusTrap(cardRef, isOpen);
 
   const handleFontFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,7 +65,11 @@ export function SettingsPanel({
             onClick={onClose}
           />
 
-          <div className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in">
+          <div
+            ref={cardRef}
+            tabIndex={-1}
+            className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in focus:outline-none"
+          >
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-accent/70 to-accent/40" />
 
             <div className="p-5">

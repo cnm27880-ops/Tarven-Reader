@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatRoom } from "../lib/chatStorage";
 import { exportAllData, importAllData, isBackupPayload } from "../lib/chatStorage";
+import type { AutoSyncState } from "../lib/driveSync";
 import {
   downloadBackup,
   getAutoSyncEnabled,
+  getAutoSyncState,
   getCloudBackupTime,
   getSavedClientId,
   requestAccessToken,
+  setAutoSyncState,
   uploadBackup,
 } from "../lib/driveSync";
 
@@ -25,6 +28,7 @@ export type AutoSyncStatus = "idle" | "syncing" | "synced" | "error";
 export function useDriveAutoSync(rooms: ChatRoom[], isHydrating: boolean) {
   const [restorePromptTime, setRestorePromptTime] = useState<number | null>(null);
   const [status, setStatus] = useState<AutoSyncStatus>("idle");
+  const [lastSync, setLastSync] = useState<AutoSyncState | null>(getAutoSyncState);
 
   const tokenRef = useRef<string | null>(null);
   const startedRef = useRef(false);
@@ -35,6 +39,12 @@ export function useDriveAutoSync(rooms: ChatRoom[], isHydrating: boolean) {
   const latestLocalChange = () =>
     roomsRef.current.reduce((max, room) => Math.max(max, room.updatedAt), 0);
 
+  const recordSync = useCallback((outcome: AutoSyncState["outcome"], message?: string) => {
+    const state: AutoSyncState = { time: Date.now(), outcome, message };
+    setAutoSyncState(state);
+    setLastSync(state);
+  }, []);
+
   const uploadNow = useCallback(async () => {
     const token = tokenRef.current;
     if (!token || roomsRef.current.length === 0) return;
@@ -42,7 +52,8 @@ export function useDriveAutoSync(rooms: ChatRoom[], isHydrating: boolean) {
     const payload = await exportAllData();
     await uploadBackup(token, JSON.stringify(payload));
     lastUploadedAtRef.current = latestLocalChange();
-  }, []);
+    recordSync("synced");
+  }, [recordSync]);
 
   useEffect(() => {
     if (isHydrating || startedRef.current) return;
@@ -74,14 +85,18 @@ export function useDriveAutoSync(rooms: ChatRoom[], isHydrating: boolean) {
 
         intervalId = setInterval(() => {
           if (latestLocalChange() > lastUploadedAtRef.current) {
-            uploadNow().catch(() => {
+            uploadNow().catch((err) => {
               /* token 可能過期，等下次手動同步 */
+              recordSync("error", err instanceof Error ? err.message : "背景備份失敗");
             });
           }
         }, AUTO_BACKUP_INTERVAL_MS);
       } catch (err) {
         console.warn("雲端自動同步未啟動：", err);
-        if (!cancelled) setStatus("error");
+        if (!cancelled) {
+          setStatus("error");
+          recordSync("error", err instanceof Error ? err.message : "自動同步未能啟動");
+        }
       }
     })();
 
@@ -89,7 +104,7 @@ export function useDriveAutoSync(rooms: ChatRoom[], isHydrating: boolean) {
       cancelled = true;
       if (intervalId) clearInterval(intervalId);
     };
-  }, [isHydrating, uploadNow]);
+  }, [isHydrating, uploadNow, recordSync]);
 
   const confirmRestore = useCallback(async () => {
     const token = tokenRef.current;
@@ -117,8 +132,11 @@ export function useDriveAutoSync(rooms: ChatRoom[], isHydrating: boolean) {
     // 使用者選擇保留本機版本 → 把本機上傳成最新
     uploadNow()
       .then(() => setStatus("synced"))
-      .catch(() => setStatus("error"));
-  }, [uploadNow]);
+      .catch((err) => {
+        setStatus("error");
+        recordSync("error", err instanceof Error ? err.message : "背景備份失敗");
+      });
+  }, [uploadNow, recordSync]);
 
-  return { restorePromptTime, status, confirmRestore, dismissRestore };
+  return { restorePromptTime, status, lastSync, confirmRestore, dismissRestore };
 }
