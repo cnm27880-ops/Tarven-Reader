@@ -145,11 +145,22 @@ function processRawMessages(
   return updatedMessages;
 }
 
+/**
+ * 主題偏好只在掛載當下算一次，避免另外用 effect 事後校正——
+ * 事後校正需要拆成「讀取」與「持久化」兩個 effect，在 React StrictMode
+ * 下重複呼叫 effect 時會互相競爭，讀到彼此半途寫入的值。
+ */
+function getInitialTheme(): Theme {
+  const saved = localStorage.getItem("theme");
+  if (saved === "light" || saved === "dark") return saved;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
 export function useChatManager() {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [viewMode, setViewMode] = useState<ViewMode>("bubble");
   const [textLocale, setTextLocale] = useState<TextLocale>("zh-TW");
   const [isLoading, setIsLoading] = useState(false);
@@ -195,13 +206,6 @@ export function useChatManager() {
   }, [flushSave]);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
-
     const savedLocale = localStorage.getItem(LOCALE_STORAGE_KEY) as TextLocale | null;
     if (savedLocale === "zh-TW" || savedLocale === "zh-CN") {
       setTextLocale(savedLocale);

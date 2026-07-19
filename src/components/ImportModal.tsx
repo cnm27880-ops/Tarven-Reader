@@ -3,6 +3,7 @@ import { FileText, X } from "lucide-react";
 import type { TextLocale } from "../lib/chinese";
 import { LOCALE_LABELS } from "../lib/chinese";
 import type { ImportMode } from "../hooks/useChatManager";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 
 interface ImportModalProps {
   fileName: string;
@@ -22,6 +23,8 @@ export function ImportModal({
   const [locale, setLocale] = useState<TextLocale>(defaultLocale);
   const [mode, setMode] = useState<ImportMode>("new");
   const canAppend = Boolean(currentRoomName);
+
+  useEscapeKey(true, onCancel);
 
   return (
     <div

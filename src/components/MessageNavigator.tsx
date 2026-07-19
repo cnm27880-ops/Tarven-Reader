@@ -66,7 +66,8 @@ export function MessageNavigator({
         <span className="block text-muted-foreground/40">/{chapterCount}</span>
       </span>
 
-      <div className="relative flex flex-col items-center flex-1 min-h-[160px] w-full my-1">
+      {/* 逐則標記軌：手機觸控下命中率太低（每點僅數 px 高），只在桌面（lg 以上）顯示，手機保留上/下章按鈕即可。 */}
+      <div className="hidden lg:flex relative flex-col items-center flex-1 min-h-[160px] w-full my-1">
         <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border/70" />
 
         <div className="relative flex flex-col justify-between h-full w-full py-1">

@@ -4,6 +4,7 @@ import type { ChatMessage } from "../types/chat";
 import { CHAPTER_SIZE } from "../lib/utils";
 import { getBookmarks } from "../lib/bookmarks";
 import { jumpToChapter } from "../lib/readerNav";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 
 interface StatsPanelProps {
   messages: ChatMessage[];
@@ -63,6 +64,8 @@ export function StatsPanel({ messages, roomId, roomName, isOpen, onClose }: Stat
       readingMinutes: totalChars / READING_SPEED,
     };
   }, [messages]);
+
+  useEscapeKey(isOpen, onClose);
 
   if (!isOpen) return null;
 

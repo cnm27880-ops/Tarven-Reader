@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Check, Upload, X } from "lucide-react";
 import type { AccentColor, FontPreset } from "../hooks/useReaderSettings";
 import { ACCENT_COLORS, FONT_PRESETS } from "../hooks/useReaderSettings";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import { MessageContent } from "./MessageContent";
 
 interface SettingsPanelProps {
@@ -32,6 +33,8 @@ export function SettingsPanel({
   const [fontError, setFontError] = useState<string | null>(null);
   const [isLoadingFont, setIsLoadingFont] = useState(false);
   const fontInputRef = useRef<HTMLInputElement>(null);
+
+  useEscapeKey(isOpen, onClose);
 
   const handleFontFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -200,6 +203,35 @@ export function SettingsPanel({
                 >
                   <MessageContent text="預覽文字：**這是內心話的樣式**，*這是星號動作描述的樣式*，一般敘述文字則維持原色。" />
                 </p>
+
+                {/* 鍵盤快捷鍵只對有實體鍵盤的裝置有意義，手機版不顯示。 */}
+                <div className="hidden lg:block">
+                  <label className="text-sm font-medium text-foreground mb-2.5 block">
+                    鍵盤快捷鍵
+                  </label>
+                  <ul className="space-y-2 text-xs text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/40">
+                    {[
+                      { label: "翻頁（Shift 反向）", keys: ["空白鍵", "PageDown"] },
+                      { label: "切換章節", keys: ["←", "→"] },
+                      { label: "跳到開頭／結尾", keys: ["Home", "End"] },
+                      { label: "搜尋正文", keys: ["Ctrl/⌘", "F"] },
+                    ].map((row) => (
+                      <li key={row.label} className="flex items-center justify-between gap-3">
+                        <span>{row.label}</span>
+                        <span className="flex items-center gap-1 shrink-0">
+                          {row.keys.map((key, i) => (
+                            <span key={i} className="flex items-center gap-1">
+                              {i > 0 && <span className="text-muted-foreground/50">/</span>}
+                              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background text-foreground font-mono text-[10px]">
+                                {key}
+                              </kbd>
+                            </span>
+                          ))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

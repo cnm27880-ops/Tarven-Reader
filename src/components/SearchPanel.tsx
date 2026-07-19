@@ -3,6 +3,7 @@ import { Search, X } from "lucide-react";
 import type { ChatMessage } from "../types/chat";
 import { CHAPTER_SIZE } from "../lib/utils";
 import { jumpToMessage, publishSearchHighlight } from "../lib/readerNav";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 
 interface SearchPanelProps {
   messages: ChatMessage[];
@@ -86,6 +87,8 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
       ?.scrollIntoView({ block: "nearest" });
   }, [selected]);
 
+  useEscapeKey(isOpen, onClose);
+
   if (!isOpen) return null;
 
   const jumpTo = (index: number) => {
@@ -95,9 +98,7 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onClose();
-    } else if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
       setSelected((prev) => Math.min(prev + 1, hits.length - 1));
     } else if (e.key === "ArrowUp") {
@@ -186,10 +187,11 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
         </ul>
 
         <div className="px-4 py-2 border-t border-border/50 text-[10px] text-muted-foreground flex gap-3">
-          <span>↑↓ 選擇</span>
-          <span>Enter 跳轉</span>
-          <span>Esc 關閉</span>
-          <span className="ml-auto">跳轉後命中字句會短暫高亮</span>
+          <span className="hidden sm:inline">↑↓ 選擇</span>
+          <span className="hidden sm:inline">Enter 跳轉</span>
+          <span className="hidden sm:inline">Esc 關閉</span>
+          <span className="sm:hidden">點擊結果跳轉</span>
+          <span className="ml-auto hidden sm:inline">跳轉後命中字句會短暫高亮</span>
         </div>
       </div>
     </div>

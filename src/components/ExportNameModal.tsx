@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Download, X } from "lucide-react";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 
 interface ExportNameModalProps {
   title: string;
@@ -18,6 +19,8 @@ export function ExportNameModal({
   onCancel,
 }: ExportNameModalProps) {
   const [name, setName] = useState(defaultName);
+
+  useEscapeKey(true, onCancel);
 
   const confirm = () => {
     onConfirm(name.trim() || defaultName);
@@ -54,7 +57,6 @@ export function ExportNameModal({
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") confirm();
-                if (e.key === "Escape") onCancel();
               }}
               className="
                 flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-border bg-background

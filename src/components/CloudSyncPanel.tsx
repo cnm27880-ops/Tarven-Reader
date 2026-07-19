@@ -23,6 +23,7 @@ import {
   setAutoSyncEnabled,
   uploadBackup,
 } from "../lib/driveSync";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 
 interface CloudSyncPanelProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export function CloudSyncPanel({ isOpen, onClose }: CloudSyncPanelProps) {
   const [showHelp, setShowHelp] = useState(false);
   const [autoSync, setAutoSync] = useState(getAutoSyncEnabled);
   const backupInputRef = useRef<HTMLInputElement>(null);
+
+  useEscapeKey(isOpen, onClose);
 
   if (!isOpen) return null;
 
