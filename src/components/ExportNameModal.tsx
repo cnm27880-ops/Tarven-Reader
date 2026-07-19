@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Download, X } from "lucide-react";
+import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface ExportNameModalProps {
   title: string;
@@ -18,6 +20,10 @@ export function ExportNameModal({
   onCancel,
 }: ExportNameModalProps) {
   const [name, setName] = useState(defaultName);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEscapeKey(true, onCancel);
+  useFocusTrap(cardRef, true);
 
   const confirm = () => {
     onConfirm(name.trim() || defaultName);
@@ -30,7 +36,11 @@ export function ExportNameModal({
         onClick={onCancel}
       />
 
-      <div className="relative w-full max-w-sm rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden">
+      <div
+        ref={cardRef}
+        tabIndex={-1}
+        className="relative w-full max-w-sm rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden focus:outline-none"
+      >
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-accent/70 to-accent/40" />
 
         <div className="p-5">
@@ -54,7 +64,6 @@ export function ExportNameModal({
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") confirm();
-                if (e.key === "Escape") onCancel();
               }}
               className="
                 flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-border bg-background

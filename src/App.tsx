@@ -268,13 +268,6 @@ function App() {
           onRenameRoom={(id, name) => void renameRoom(id, name)}
           onDeleteRoom={(id) => void removeRoom(id)}
           onImportClick={triggerFileInput}
-          onExportTxt={handleExport}
-          onExportTavern={handleExportTavern}
-          onCloudSync={openCloudSync}
-          onSearch={() => {
-            setIsSearchOpen(true);
-            setIsSidebarOpen(false);
-          }}
         />
 
         <ReadingArea
@@ -354,7 +347,12 @@ function App() {
         </div>
       )}
 
-      <CloudSyncPanel isOpen={isCloudSyncOpen} onClose={() => setIsCloudSyncOpen(false)} />
+      <CloudSyncPanel
+        isOpen={isCloudSyncOpen}
+        onClose={() => setIsCloudSyncOpen(false)}
+        autoSyncStatus={autoSync.status}
+        autoSyncLastResult={autoSync.lastSync}
+      />
 
       {pendingExport && (
         <ExportNameModal

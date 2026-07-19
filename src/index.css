@@ -31,7 +31,7 @@
     --gradient-start: rgba(124, 106, 239, 0.06);
     --gradient-end: rgba(124, 106, 239, 0.04);
     --inner-thought: #6b4fa8;
-    --soft-aside: #9a9690;
+    --soft-aside: #726f6b;
     --reader-font-family: "Noto Serif TC", "Noto Serif", serif;
     --reader-font-size: 17px;
   }
@@ -50,7 +50,7 @@
     --gradient-start: rgba(157, 141, 247, 0.08);
     --gradient-end: rgba(157, 141, 247, 0.05);
     --inner-thought: #c4b5fd;
-    --soft-aside: #7d7a75;
+    --soft-aside: #88857f;
   }
 
   /* ── 自訂主題色（data-accent 掛在 <html> 上） ── */

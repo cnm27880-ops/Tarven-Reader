@@ -3,6 +3,8 @@ import { Search, X } from "lucide-react";
 import type { ChatMessage } from "../types/chat";
 import { CHAPTER_SIZE } from "../lib/utils";
 import { jumpToMessage, publishSearchHighlight } from "../lib/readerNav";
+import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface SearchPanelProps {
   messages: ChatMessage[];
@@ -59,6 +61,7 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(query), 200);
@@ -72,9 +75,7 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
   }, [debounced]);
 
   useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => inputRef.current?.focus());
-    } else {
+    if (!isOpen) {
       setQuery("");
       setDebounced("");
     }
@@ -86,6 +87,9 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
       ?.scrollIntoView({ block: "nearest" });
   }, [selected]);
 
+  useEscapeKey(isOpen, onClose);
+  useFocusTrap(cardRef, isOpen);
+
   if (!isOpen) return null;
 
   const jumpTo = (index: number) => {
@@ -95,9 +99,7 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onClose();
-    } else if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
       setSelected((prev) => Math.min(prev + 1, hits.length - 1));
     } else if (e.key === "ArrowUp") {
@@ -115,7 +117,11 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[70vh]">
+      <div
+        ref={cardRef}
+        tabIndex={-1}
+        className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[70vh] focus:outline-none"
+      >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
@@ -186,10 +192,11 @@ export function SearchPanel({ messages, isOpen, onClose }: SearchPanelProps) {
         </ul>
 
         <div className="px-4 py-2 border-t border-border/50 text-[10px] text-muted-foreground flex gap-3">
-          <span>↑↓ 選擇</span>
-          <span>Enter 跳轉</span>
-          <span>Esc 關閉</span>
-          <span className="ml-auto">跳轉後命中字句會短暫高亮</span>
+          <span className="hidden sm:inline">↑↓ 選擇</span>
+          <span className="hidden sm:inline">Enter 跳轉</span>
+          <span className="hidden sm:inline">Esc 關閉</span>
+          <span className="sm:hidden">點擊結果跳轉</span>
+          <span className="ml-auto hidden sm:inline">跳轉後命中字句會短暫高亮</span>
         </div>
       </div>
     </div>

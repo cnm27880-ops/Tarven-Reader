@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { BarChart3, X } from "lucide-react";
 import type { ChatMessage } from "../types/chat";
 import { CHAPTER_SIZE } from "../lib/utils";
 import { getBookmarks } from "../lib/bookmarks";
 import { jumpToChapter } from "../lib/readerNav";
+import { useEscapeKey } from "../hooks/useEscapeKey";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface StatsPanelProps {
   messages: ChatMessage[];
@@ -64,6 +66,11 @@ export function StatsPanel({ messages, roomId, roomName, isOpen, onClose }: Stat
     };
   }, [messages]);
 
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEscapeKey(isOpen, onClose);
+  useFocusTrap(cardRef, isOpen);
+
   if (!isOpen) return null;
 
   const bookmarkCount = getBookmarks(roomId).length;
@@ -85,7 +92,11 @@ export function StatsPanel({ messages, roomId, roomName, isOpen, onClose }: Stat
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-md rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden max-h-[85vh] flex flex-col">
+      <div
+        ref={cardRef}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-2xl border border-border/80 bg-surface shadow-2xl animate-scale-in overflow-hidden max-h-[85vh] flex flex-col focus:outline-none"
+      >
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent via-accent/70 to-accent/40" />
 
         <div className="p-5 overflow-y-auto">

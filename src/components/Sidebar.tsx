@@ -5,14 +5,10 @@ import {
   BookOpen,
   Bookmark,
   ChevronRight,
-  Cloud,
-  Download,
-  FileJson,
   List,
   MessageSquare,
   Pencil,
   Plus,
-  Search,
   Trash2,
   X,
 } from "lucide-react";
@@ -40,10 +36,6 @@ interface SidebarProps {
   onRenameRoom: (roomId: string, name: string) => void;
   onDeleteRoom: (roomId: string) => void;
   onImportClick: () => void;
-  onExportTxt: () => void;
-  onExportTavern: () => void;
-  onCloudSync: () => void;
-  onSearch: () => void;
 }
 
 export function Sidebar({
@@ -56,10 +48,6 @@ export function Sidebar({
   onRenameRoom,
   onDeleteRoom,
   onImportClick,
-  onExportTxt,
-  onExportTavern,
-  onCloudSync,
-  onSearch,
 }: SidebarProps) {
   const chapterCount = Math.ceil(messages.length / CHAPTER_SIZE);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
@@ -234,7 +222,7 @@ export function Sidebar({
                     )}
 
                     {!isEditing && !isDeleting && (
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -372,7 +360,7 @@ export function Sidebar({
                       )}
 
                       {activeRoomId && !isEditingNote && (
-                        <div className="absolute right-1.5 top-2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                        <div className="absolute right-1.5 top-2 flex flex-col gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all">
                           <button
                             type="button"
                             onClick={() => {
@@ -451,52 +439,6 @@ export function Sidebar({
               })}
             </ul>
           )}
-        </div>
-
-        {/* 小螢幕沒有右側工具列，改在側邊欄提供匯出與雲端功能 */}
-        <div className="lg:hidden px-4 pb-2 shrink-0">
-          <div className="flex gap-1.5">
-            {messages.length > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={onSearch}
-                  className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                  title="搜尋正文"
-                >
-                  <Search className="w-4 h-4" />
-                  <span className="text-[10px]">搜尋</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onExportTxt}
-                  className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                  title="匯出為 TXT"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-[10px]">TXT</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onExportTavern}
-                  className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                  title="匯出酒館純淨檔"
-                >
-                  <FileJson className="w-4 h-4" />
-                  <span className="text-[10px]">純淨檔</span>
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={onCloudSync}
-              className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-              title="雲端同步與備份"
-            >
-              <Cloud className="w-4 h-4" />
-              <span className="text-[10px]">雲端</span>
-            </button>
-          </div>
         </div>
 
         <button

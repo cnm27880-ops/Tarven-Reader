@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Sun, Moon, MessageSquare, BookOpen, Download, FileJson, Cloud, Search, BarChart3, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Theme, ViewMode } from "../hooks/useChatManager";
@@ -23,6 +24,103 @@ interface ToolButton {
   onClick: () => void;
 }
 
+interface ExportMenuButtonProps {
+  buttonClassName: string;
+  iconClassName: string;
+  /** "left"：桌面直立工具條，選單往左展開；"top"：手機底部工具列，選單往上展開。 */
+  placement: "left" | "top";
+  onExportTxt: () => void;
+  onExportTavern: () => void;
+}
+
+function ExportMenuButton({
+  buttonClassName,
+  iconClassName,
+  placement,
+  onExportTxt,
+  onExportTavern,
+}: ExportMenuButtonProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  const menuItemClass =
+    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap";
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={buttonClassName}
+        title="匯出"
+        aria-label="匯出"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <Download className={iconClassName} />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className={`
+            absolute z-20 flex flex-col gap-0.5 p-1.5 rounded-xl
+            bg-surface border border-border/70 shadow-lg
+            ${
+              placement === "left"
+                ? "right-full top-1/2 -translate-y-1/2 mr-2"
+                : "bottom-full left-1/2 -translate-x-1/2 mb-2"
+            }
+          `}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onExportTxt();
+              setOpen(false);
+            }}
+            className={menuItemClass}
+          >
+            <Download className="w-4 h-4" />
+            匯出為 TXT
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onExportTavern();
+              setOpen(false);
+            }}
+            className={menuItemClass}
+          >
+            <FileJson className="w-4 h-4" />
+            匯出酒館純淨檔
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Toolbar({
   theme,
   toggleTheme,
@@ -36,7 +134,7 @@ export function Toolbar({
   onSettings,
   hasMessages,
 }: ToolbarProps) {
-  const buttons: ToolButton[] = [
+  const leadingButtons: ToolButton[] = [
     {
       key: "theme",
       icon: theme === "light" ? Moon : Sun,
@@ -50,12 +148,13 @@ export function Toolbar({
       onClick: toggleViewMode,
     },
     ...(hasMessages
-      ? [
-          { key: "search", icon: Search, label: "搜尋正文（Ctrl+F）", onClick: onSearch },
-          { key: "export", icon: Download, label: "匯出為 TXT", onClick: onExport },
-          { key: "tavern", icon: FileJson, label: "匯出酒館純淨檔（JSON）", onClick: onExportTavern },
-          { key: "stats", icon: BarChart3, label: "閱讀統計", onClick: onStats },
-        ]
+      ? [{ key: "search", icon: Search, label: "搜尋正文（Ctrl+F）", onClick: onSearch }]
+      : []),
+  ];
+
+  const trailingButtons: ToolButton[] = [
+    ...(hasMessages
+      ? [{ key: "stats", icon: BarChart3, label: "閱讀統計", onClick: onStats }]
       : []),
     { key: "cloud", icon: Cloud, label: "雲端同步與備份", onClick: onCloudSync },
   ];
@@ -83,7 +182,21 @@ export function Toolbar({
       {/* 桌面版：右側直立功能條 */}
       <aside className="w-16 xl:w-[4.5rem] hidden lg:flex flex-col items-center py-6 border-l border-border/60 bg-surface/50 backdrop-blur-sm z-10 shrink-0">
         <div className="flex flex-col gap-3">
-          {buttons.map(({ key, icon: Icon, label, onClick }) => (
+          {leadingButtons.map(({ key, icon: Icon, label, onClick }) => (
+            <button key={key} onClick={onClick} className={btnClass} title={label} aria-label={label}>
+              <Icon className={iconClass} />
+            </button>
+          ))}
+          {hasMessages && (
+            <ExportMenuButton
+              buttonClassName={btnClass}
+              iconClassName={iconClass}
+              placement="left"
+              onExportTxt={onExport}
+              onExportTavern={onExportTavern}
+            />
+          )}
+          {trailingButtons.map(({ key, icon: Icon, label, onClick }) => (
             <button key={key} onClick={onClick} className={btnClass} title={label} aria-label={label}>
               <Icon className={iconClass} />
             </button>
@@ -112,7 +225,21 @@ export function Toolbar({
         aria-label="工具列"
       >
         <div className="h-14 flex items-center justify-around px-1 max-w-lg mx-auto">
-          {buttons.map(({ key, icon: Icon, label, onClick }) => (
+          {leadingButtons.map(({ key, icon: Icon, label, onClick }) => (
+            <button key={key} onClick={onClick} className={mobileBtnClass} title={label} aria-label={label}>
+              <Icon className="w-5 h-5" />
+            </button>
+          ))}
+          {hasMessages && (
+            <ExportMenuButton
+              buttonClassName={mobileBtnClass}
+              iconClassName="w-5 h-5"
+              placement="top"
+              onExportTxt={onExport}
+              onExportTavern={onExportTavern}
+            />
+          )}
+          {trailingButtons.map(({ key, icon: Icon, label, onClick }) => (
             <button key={key} onClick={onClick} className={mobileBtnClass} title={label} aria-label={label}>
               <Icon className="w-5 h-5" />
             </button>
