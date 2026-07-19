@@ -222,7 +222,7 @@ export function Sidebar({
                     )}
 
                     {!isEditing && !isDeleting && (
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -360,7 +360,7 @@ export function Sidebar({
                       )}
 
                       {activeRoomId && !isEditingNote && (
-                        <div className="absolute right-1.5 top-2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                        <div className="absolute right-1.5 top-2 flex flex-col gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all">
                           <button
                             type="button"
                             onClick={() => {
